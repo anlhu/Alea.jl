@@ -393,7 +393,6 @@ function interleave(x::DistUInt{W}, y::DistUInt{W}) where W
     sorted_bit_indices = sort(collect(keys(flips_by_bit_index)))
 
     ordering_idx = 1
-
     for bit_idx in sorted_bit_indices
         # println("Inside loop: current bit index = ", bit_idx)
         for flip in flips_by_bit_index[bit_idx]
@@ -414,7 +413,7 @@ function Base.:(+)(x::DistUInt{W}, y::DistUInt{W}) where W
     z = Vector{AnyBool}(undef, W)
 
     # Interleave x, y bits for variable ordering 
-    interleave(x,y)
+    # interleave(x,y)
 
     carry = false
     for i = W:-1:1
@@ -423,17 +422,27 @@ function Base.:(+)(x::DistUInt{W}, y::DistUInt{W}) where W
     end
     errorcheck() & carry && error("integer overflow in `$x + $y`")
 
-    # Trying parsing through sum variable instead
-    # println("\n----SUM Var----")
-    # for bit in z
-    #     println(bit)
-    #     inside_bits = extract_flips(bit)
-        # for ib in inside_bits
-        #     println("\t", ib)
-        # end
-        
-    # end
-    # println("\n----END: SUM Var----")
+    #= 
+    Iterate through flips used to create SUM variable 'z'
+        z[1] holds the path through the BDD if you enter at the MSB 
+        This traverses all flips, b/c they're all required for the computation
+        Traverses from flips at top of BDD to flips at bottom --> assign ordering based on the visit order of this traversal
+    =#
+    traversal = z[1]
+    traversal_flips = unique(extract_flips(traversal))
+    orderings = [flip.ordering for flip in traversal_flips]     # Get available 'ordering' values to reassign to correctly ordered flips
+    sort!(orderings)
+    println("-- Orderings: ", orderings)
+    ordering_idx = 1
+    for bit in traversal_flips
+        bit.ordering = orderings[ordering_idx]
+        ordering_idx += 1
+    end
+
+    println("\n\n+++ AFTER REORDERING: ")
+    for bit in traversal_flips
+        println("\t", bit)
+    end
 
     DistUInt{W}(z)
 end
