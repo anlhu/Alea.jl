@@ -344,76 +344,9 @@ function extract_flips(bit)
     return []
 end
 
-function interleave(x::DistUInt{W}, y::DistUInt{W}) where W
-    x_flips = []
-    for i in 0:length(x.bits)-1
-        flips = extract_flips(x.bits[i+1])
-        for flip in flips
-            # flip.bit_index = i
-            if (flip.bit_index === nothing)
-                flip.bit_index = i
-            end
-        end
-        append!(x_flips, flips)
-    end
-    y_flips = []
-    for i in 0:length(y.bits)-1
-        flips = extract_flips(y.bits[i+1])
-        for flip in flips
-            # flip.bit_index = i
-            if (flip.bit_index === nothing)
-                flip.bit_index = i
-            end
-        end
-        append!(y_flips, flips)
-    end
-
-
-    all_flips = unique(vcat(x_flips, y_flips))
-    println("\n+++FLIPS\n\t")
-    for o in all_flips
-        println("\t", o)
-    end
-
-    # Extract available 'ordering' values to be interleaved
-    orderings = [flip.ordering for flip in all_flips]
-    sort!(orderings)
-
-    flips_by_bit_index = Dict()
-
-    # Group Flips by bit_index for interleaving
-    for flip in all_flips
-        if !haskey(flips_by_bit_index, flip.bit_index)
-            flips_by_bit_index[flip.bit_index] = []
-        end
-        push!(flips_by_bit_index[flip.bit_index], flip)
-    end
-
-    # Sort all Flips by bit_index --> handles interleaving by bit index 
-    sorted_bit_indices = sort(collect(keys(flips_by_bit_index)))
-
-    ordering_idx = 1
-    for bit_idx in sorted_bit_indices
-        # println("Inside loop: current bit index = ", bit_idx)
-        for flip in flips_by_bit_index[bit_idx]
-            # println("\tGiving ordering ", orderings[ordering_idx], " to flip ", flip)
-            flip.ordering = orderings[ordering_idx]
-            ordering_idx += 1
-        end
-    end
-
-    println("\n+++After Reordering: FLIPS\n\t")
-    for o in all_flips
-        println("\t", o)
-    end
-end
-
 
 function Base.:(+)(x::DistUInt{W}, y::DistUInt{W}) where W
     z = Vector{AnyBool}(undef, W)
-
-    # Interleave x, y bits for variable ordering 
-    # interleave(x,y)
 
     carry = false
     for i = W:-1:1
@@ -471,8 +404,6 @@ function Base.:(-)(x::DistUInt{W}, y::DistUInt{W}) where W
     z = Vector{AnyBool}(undef, W)
     borrow = false
     
-    # Interleaving bits in x, y for variable ordering 
-    interleave(x,y)
 
     for i=W:-1:1
         z[i] = xor(x.bits[i], y.bits[i], borrow)
