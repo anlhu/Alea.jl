@@ -170,8 +170,8 @@ class ExperimentRunner:
     
     def copy_figure3_plots(self, log_dir: str) -> None:
         """Copy plots for figure 3 from the log directory."""
-        feature_dist_pattern = os.path.join(log_dir, 'feature_dist_feature_spec_entropy_train_feature=true_freq=1-spb=5_prop=wellTyped_feature=typecheck_ft.png')
-        unique_curves_pattern = os.path.join(log_dir, 'unique_curves_feature_spec_entropy_train_feature=true_freq=1-spb=5_prop=wellTyped_feature=typecheck_ft.svg')
+        feature_dist_pattern = os.path.join(log_dir, f'feature_dist_feature_spec_entropy_train_feature=true_freq=1-spb={self.args.fig3_samples_per_batch}_prop=wellTyped_feature=typecheck_ft.png')
+        unique_curves_pattern = os.path.join(log_dir, f'unique_curves_feature_spec_entropy_train_feature=true_freq=1-spb={self.args.fig3_samples_per_batch}_prop=wellTyped_feature=typecheck_ft.svg')
         
         if self.verbose:
             print(f"Looking for plots in directory: {log_dir}")
@@ -305,7 +305,7 @@ def create_figure3_experiment(args: argparse.Namespace) -> Experiment:
             "julia", "--project", "pbt/experiments/tool.jl",
             "-f",
             "LangSiblingDerivedGenerator{STLC}(Main.Expr.t,Pair{Type,Integer}[Main.Expr.t=>5,Main.Typ.t=>2],2,3)",
-            f"Pair{{FeatureSpecEntropy{{STLC}},Float64}}[FeatureSpecEntropy{{STLC}}(1,200,wellTyped,typecheck_ft,true)=>{args.fig3_learning_rate}]",
+            f"Pair{{FeatureSpecEntropy{{STLC}},Float64}}[FeatureSpecEntropy{{STLC}}(1,{args.fig3_samples_per_batch},wellTyped,typecheck_ft,true)=>{args.fig3_learning_rate}]",
             str(args.fig3_epochs),
             "0.0"
         ]
@@ -323,6 +323,7 @@ def main():
     parser.add_argument('--fig2-epochs', type=int, help='Number of epochs for figure 2 experiments')
     parser.add_argument('--fig3-learning-rate', type=float, help='Learning rate for figure 3 experiment')
     parser.add_argument('--fig3-epochs', type=int, help='Number of epochs for figure 3 experiment')
+    parser.add_argument('--fig3-samples-per-batch', type=int, help='Number of samples per batch for figure 3 experiment')
     args, unknown = parser.parse_known_args()
     
     # Validate that at least one figure is selected
@@ -349,14 +350,15 @@ def main():
         args.fig2_learning_rate = args.fig2_learning_rate if args.fig2_learning_rate is not None else 0.3
         args.fig2_epochs = args.fig2_epochs if args.fig2_epochs is not None else 100
         args.fig3_learning_rate = args.fig3_learning_rate if args.fig3_learning_rate is not None else 1.0
-        args.fig3_epochs = args.fig3_epochs if args.fig3_epochs is not None else 200
+        args.fig3_epochs = args.fig3_epochs if args.fig3_epochs is not None else 2
+        args.fig3_samples_per_batch = args.fig3_samples_per_batch if args.fig3_samples_per_batch is not None else 2
     else:
         # Normal defaults
         args.fig2_learning_rate = args.fig2_learning_rate if args.fig2_learning_rate is not None else 0.1
         args.fig2_epochs = args.fig2_epochs if args.fig2_epochs is not None else 1000
         args.fig3_learning_rate = args.fig3_learning_rate if args.fig3_learning_rate is not None else 0.3
         args.fig3_epochs = args.fig3_epochs if args.fig3_epochs is not None else 2000
-    
+        args.fig3_samples_per_batch = args.fig3_samples_per_batch if args.fig3_samples_per_batch is not None else 200
     # Create experiment runner
     runner = ExperimentRunner(verbose=args.verbose)
     
