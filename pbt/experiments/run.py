@@ -56,13 +56,17 @@ class Experiment:
 class ExperimentRunner:
     """Handles running experiments and managing their output."""
     
-    def __init__(self, verbose: bool = False):
+    def __init__(self, verbose: bool = False, args: Optional[argparse.Namespace] = None):
         self.verbose = verbose
+        self.args = args
         self.output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'experiments-output')
         os.makedirs(self.output_dir, exist_ok=True)
     
     def run_experiment(self, command: List[str]) -> str:
         """Run a Julia command and return the log file path."""
+        if self.verbose:
+            print(f"Running command: {' '.join(command)}")
+        
         result = subprocess.run(command, capture_output=True, text=True)
         if result.returncode != 0:
             print("Error: Command failed with status", result.returncode)
@@ -142,15 +146,15 @@ class ExperimentRunner:
         plt.savefig(output_path)
         plt.close()
     
-    def run_single_experiment(self, experiment: Experiment) -> None:
-        """Run a single experiment and generate its plots."""
+    def run_single_experiment(self, experiment: Experiment) -> str:
+        """Run a single experiment and return the log file path."""
         if self.verbose:
             print(f"\nRunning {experiment.name} experiment...")
         
-        log_path = self.run_experiment(experiment.command)
-        if self.verbose:
-            print(f"Log file: {log_path}")
-        
+        return self.run_experiment(experiment.command)
+    
+    def handle_figure2_plots(self, experiment: Experiment, log_path: str) -> None:
+        """Handle distribution plots for figure 2 experiments."""
         initial_path, trained_path = self.parse_dist_paths(log_path)
         if self.verbose:
             print(f"Initial dist: {initial_path}")
@@ -165,11 +169,15 @@ class ExperimentRunner:
         
         plot_path = os.path.join(self.output_dir, f"fig2_{experiment.name}.png")
         self.plot_distributions(initial_dist, trained_dist, plot_path, 
-                              experiment.target_type, experiment.name)
+                              experiment.target_type or 'uniform', experiment.name)
         print(f"Plot saved to: {plot_path}")
     
     def copy_figure3_plots(self, log_dir: str) -> None:
         """Copy plots for figure 3 from the log directory."""
+        if self.args is None:
+            print("Error: ExperimentRunner needs args to handle figure 3 plots")
+            sys.exit(1)
+            
         feature_dist_pattern = os.path.join(log_dir, f'feature_dist_feature_spec_entropy_train_feature=true_freq=1-spb={self.args.fig3_samples_per_batch}_prop=wellTyped_feature=typecheck_ft.png')
         unique_curves_pattern = os.path.join(log_dir, f'unique_curves_feature_spec_entropy_train_feature=true_freq=1-spb={self.args.fig3_samples_per_batch}_prop=wellTyped_feature=typecheck_ft.svg')
         
@@ -206,13 +214,14 @@ class ExperimentRunner:
         shutil.copy2(unique_curves_pattern, output_path)
         print(f"Plot saved to: {output_path}")
 
-def run_experiments_parallel(experiments: List[Experiment], runner: ExperimentRunner) -> None:
-    """Run experiments in parallel using multiprocessing."""
+def run_experiments_parallel(experiments: List[Experiment], runner: ExperimentRunner) -> List[str]:
+    """Run experiments in parallel using multiprocessing and return log paths."""
     num_workers = min(len(experiments), multiprocessing.cpu_count())
     pool = multiprocessing.Pool(processes=num_workers)
-    pool.map(runner.run_single_experiment, experiments)
+    log_paths = pool.map(runner.run_single_experiment, experiments)
     pool.close()
     pool.join()
+    return log_paths
 
 def create_figure2_experiments(args: argparse.Namespace) -> List[Experiment]:
     """Create the list of experiments for figure 2."""
@@ -350,8 +359,8 @@ def main():
         args.fig2_learning_rate = args.fig2_learning_rate if args.fig2_learning_rate is not None else 0.3
         args.fig2_epochs = args.fig2_epochs if args.fig2_epochs is not None else 100
         args.fig3_learning_rate = args.fig3_learning_rate if args.fig3_learning_rate is not None else 1.0
-        args.fig3_epochs = args.fig3_epochs if args.fig3_epochs is not None else 2
-        args.fig3_samples_per_batch = args.fig3_samples_per_batch if args.fig3_samples_per_batch is not None else 2
+        args.fig3_epochs = args.fig3_epochs if args.fig3_epochs is not None else 200
+        args.fig3_samples_per_batch = args.fig3_samples_per_batch if args.fig3_samples_per_batch is not None else 50
     else:
         # Normal defaults
         args.fig2_learning_rate = args.fig2_learning_rate if args.fig2_learning_rate is not None else 0.1
@@ -359,8 +368,8 @@ def main():
         args.fig3_learning_rate = args.fig3_learning_rate if args.fig3_learning_rate is not None else 0.3
         args.fig3_epochs = args.fig3_epochs if args.fig3_epochs is not None else 2000
         args.fig3_samples_per_batch = args.fig3_samples_per_batch if args.fig3_samples_per_batch is not None else 200
-    # Create experiment runner
-    runner = ExperimentRunner(verbose=args.verbose)
+    # Create experiment runner with args
+    runner = ExperimentRunner(verbose=args.verbose, args=args)
     
     # Create experiments
     figure2_experiments = create_figure2_experiments(args)
@@ -371,36 +380,41 @@ def main():
         if args.parallel:
             # Run all experiments in parallel
             all_experiments = figure2_experiments + [figure3_experiment]
-            run_experiments_parallel(all_experiments, runner)
+            log_paths = run_experiments_parallel(all_experiments, runner)
             
-            # After all experiments complete, copy the plots for figure 3
-            log_path = runner.run_experiment(figure3_experiment.command)
-            log_dir = os.path.dirname(log_path)
+            # Handle figure 2 plots
+            for exp, log_path in zip(figure2_experiments, log_paths[:-1]):
+                runner.handle_figure2_plots(exp, log_path)
+            
+            # Handle figure 3 plots
+            log_dir = os.path.dirname(log_paths[-1])
             runner.copy_figure3_plots(log_dir)
         else:
             # Run figures sequentially
             for exp in figure2_experiments:
-                runner.run_single_experiment(exp)
-            runner.run_single_experiment(figure3_experiment)
-            log_path = runner.run_experiment(figure3_experiment.command)
+                log_path = runner.run_single_experiment(exp)
+                runner.handle_figure2_plots(exp, log_path)
+            
+            log_path = runner.run_single_experiment(figure3_experiment)
             log_dir = os.path.dirname(log_path)
             runner.copy_figure3_plots(log_dir)
     else:
         if args.fig2:
             if args.parallel:
-                run_experiments_parallel(figure2_experiments, runner)
+                log_paths = run_experiments_parallel(figure2_experiments, runner)
+                for exp, log_path in zip(figure2_experiments, log_paths):
+                    runner.handle_figure2_plots(exp, log_path)
             else:
                 for exp in figure2_experiments:
-                    runner.run_single_experiment(exp)
+                    log_path = runner.run_single_experiment(exp)
+                    runner.handle_figure2_plots(exp, log_path)
         if args.fig3:
             if args.parallel:
-                run_experiments_parallel([figure3_experiment], runner)
-                log_path = runner.run_experiment(figure3_experiment.command)
-                log_dir = os.path.dirname(log_path)
+                log_paths = run_experiments_parallel([figure3_experiment], runner)
+                log_dir = os.path.dirname(log_paths[0])
                 runner.copy_figure3_plots(log_dir)
             else:
-                runner.run_single_experiment(figure3_experiment)
-                log_path = runner.run_experiment(figure3_experiment.command)
+                log_path = runner.run_single_experiment(figure3_experiment)
                 log_dir = os.path.dirname(log_path)
                 runner.copy_figure3_plots(log_dir)
 
