@@ -2,14 +2,14 @@ using MacroTools: prewalk, postwalk
 using IRTools
 using IRTools: @dynamo, IR, recurse!, self, xcall, functional
 
-export @alea_ite, @alea, dice, observe, constraint, assert_dice, @code_ir_dice
+export @alea_ite, @alea, alea, observe, constraint, assert_alea, @code_ir_alea
 
 ##################################
 # Control flow macro
 ##################################
 
-"Syntactic macro to make if-then-else supported by dice"
-macro dice_ite(code)
+"Syntactic macro to make if-then-else supported by alea"
+macro alea_ite(code)
     postwalk(esc(code)) do x
         if x isa Expr && (x.head == :if || x.head == :elseif)
             @assert length(x.args) == 3 "@alea_ite macro only supports purely functional if-then-else"
@@ -34,17 +34,17 @@ end
 # Control flow + error + observation dynamo
 ##################################
 
-"Interpret dice code with control flow, observations, and errors"
-function dice(f) 
+"Interpret alea code with control flow, observations, and errors"
+function alea(f) 
     dyna = AleaDyna()
     x = dyna(f)
     MetaDist(x, dyna.errors, dyna.observations)
 end
 
-"Interpret dice code with control flow, observations, and errors"
-macro dice(code)
+"Interpret alea code with control flow, observations, and errors"
+macro alea(code)
     esc(quote
-        dice() do
+        alea() do
             $code
         end
     end)
@@ -59,9 +59,9 @@ struct AleaDyna
 end
 
 "Assert that the current code must be run within an @alea evaluation"
-assert_dice() = error("This code must be called from within an @alea evaluation.")
+assert_alea() = error("This code must be called from within an @alea evaluation.")
 
-observe(_) = assert_dice()
+observe(_) = assert_alea()
 
 global dynamoed = Vector()
 
@@ -90,7 +90,7 @@ end
 
 top_dynamoed() = sort(dynamoed; by = x -> x[1], rev = true)
 
-(::AleaDyna)(::typeof(assert_dice)) = nothing
+(::AleaDyna)(::typeof(assert_alea)) = nothing
 
 (::AleaDyna)(::typeof(IRTools.cond), guard, then, elze) = IRTools.cond(guard, then, elze)
 
@@ -139,8 +139,8 @@ for f in :[xor, atleast_two, prob_equals, (&), (|), (!), isless, ifelse,
     @eval (::AleaDyna)(::typeof($f), args...) = $f(args...)
 end
 
-"Show pseudo-IR as run by dice's dynamo"
-macro code_ir_dice(code)
+"Show pseudo-IR as run by alea's dynamo"
+macro code_ir_alea(code)
     esc(quote
         ir = @code_ir $code
         functional(ir)
