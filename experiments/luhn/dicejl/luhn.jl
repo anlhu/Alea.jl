@@ -1,4 +1,4 @@
-using Dice
+using Alea
 using BenchmarkTools
 
 
@@ -7,7 +7,7 @@ function fun()
     n = if length(ARGS) == 1 parse(Int64, ARGS[1]) else 5 end
     
     id_obs = [2, 0, 5, 6, 0, 6, 7, 1, 7, 8]
-    c = @dice begin 
+    c = @alea begin 
 
         id = Vector(undef, n)
         for i in 1:n
