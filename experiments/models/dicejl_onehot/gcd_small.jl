@@ -1,9 +1,9 @@
-using Dice 
+using Alea 
 using BenchmarkTools
 
 
 function fun() 
-    c = @dice begin 
+    c = @alea begin 
         function gcd(a::DistUIntOH{W}, b::DistUIntOH{W}) where W
             for _ = 1 : 1 + W ÷ log2(MathConstants.golden)
                 amb = a % b

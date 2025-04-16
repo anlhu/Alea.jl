@@ -1,6 +1,6 @@
-using Dice
+using Alea
 
-c = @dice begin 
+c = @alea begin 
     n = 6
 
     id = Vector(undef, n)

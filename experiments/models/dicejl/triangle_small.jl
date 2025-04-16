@@ -1,10 +1,10 @@
 
 
-using Dice 
+using Alea 
 using BenchmarkTools
 
 function fun() 
-    c = @dice begin
+    c = @alea begin
         a = uniform(DistInt{15},-50, 51)
         b = uniform(DistInt{15},-50, 51)
         c = uniform(DistInt{15},-50, 51)

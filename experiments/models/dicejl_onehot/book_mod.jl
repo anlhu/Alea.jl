@@ -1,6 +1,6 @@
-using Dice
+using Alea
 
-c = @dice begin 
+c = @alea begin 
 curValue = uniform(DistIntOH{-100, 701}, 1, 501)
 tgtValue = uniform(DistIntOH{-100, 701}, 1, 501)
 

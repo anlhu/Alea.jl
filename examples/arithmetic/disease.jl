@@ -1,7 +1,7 @@
-using Dice 
+using Alea 
 
 
-c = @dice begin 
+c = @alea begin 
     function binomial(n::DistUInt{W}, p::Float, max::Int) where W 
         output = DistUInt{W}(0)
         for i in 0:max-1 

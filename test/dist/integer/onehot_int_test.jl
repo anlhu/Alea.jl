@@ -1,10 +1,10 @@
-using Dice
+using Alea
 using Test
-using Dice: Flip, num_ir_nodes
+using Alea: Flip, num_ir_nodes
 
 @testset "DistIntOH inference" begin
     x = DistIntOH{-8, 4}([false, false, true, false]) # -6
-    @test Dice.bitwidth(x) == 4
+    @test Alea.bitwidth(x) == 4
 
     p = pr(x)
     @test p[-5] ≈ 0
@@ -54,9 +54,9 @@ end
 # @testset "DistIntOH expectation" begin
 #     y = DistIntOH{4}([true, false, true, false])
 #     @test expectation(y) == -6.0
-#     @test expectation(@dice y) == -6.0
+#     @test expectation(@alea y) == -6.0
 #     @test variance(y) == 0.0
-#     @test variance(@dice y) == 0.0
+#     @test variance(@alea y) == 0.0
 
 #     y = DistIntOH{2}([flip(0.1), flip(0.1)])
 #     p = pr(y)
@@ -97,7 +97,7 @@ end
 
     # a = uniform(DistIntOH{3}, 3)
     # b = DistIntOH{3}(-1)
-    # @test_throws Exception p = pr(@dice a + b)
+    # @test_throws Exception p = pr(@alea a + b)
 
     # a = DistIntOH{3}(3)
     # b = DistIntOH{3}(-2)
@@ -126,7 +126,7 @@ end
     # T = DistIntOH{2}
     # x = uniform(T,1) - T(1)
     # y = uniform(T,1) - T(1)
-    # @test pr(@dice x + y)[-1] ≈ 0.5
+    # @test pr(@alea x + y)[-1] ≈ 0.5
     # @test pr(x + y)[-1] ≈ 0.5
 
     # we want overallocation of bits to not affect the computation graph size
@@ -135,7 +135,7 @@ end
     # x = uniform(T,1) - T(1)
     # y = uniform(T,1) - T(1)
     # s = convert(x.number, DistUInt{B+1}) + convert(y.number, DistUInt{B+1})
-    # @test Dice.num_ir_nodes(s.bits[2]) < 15 
+    # @test Alea.num_ir_nodes(s.bits[2]) < 15 
     
 end
 
@@ -148,7 +148,7 @@ end
 
     a = DistIntOH{-4, 12}(-2)
     b = DistIntOH{-4, 12}(-3)
-    p = pr(@dice a*b)
+    p = pr(@alea a*b)
     @test p[6] ≈ 1
 
     a = DistIntOH{-4, 12}(2)
@@ -163,7 +163,7 @@ end
 
     a = uniform(DistIntOH{-4, 9}, -2, 2)
     b = uniform(DistIntOH{-4, 9}, -2, 2)
-    p = pr(@dice a*b)
+    p = pr(@alea a*b)
     @test p[4] ≈ 1/16
     @test p[0] ≈ 7/16
 
@@ -171,7 +171,7 @@ end
         for j = -8:7
             a = DistIntOH{-8, 16}(i)
             b = DistIntOH{-8, 16}(j)
-            c = @dice a*b
+            c = @alea a*b
             if (i*j > 7) | (i*j < -8)
                 # @test_throws ProbException pr(c)
             else
@@ -182,13 +182,13 @@ end
 end
 
 @testset "DistIntOH uniform" begin
-    y = @dice uniform(DistIntOH{-8, 16}, -7, 1)
+    y = @alea uniform(DistIntOH{-8, 16}, -7, 1)
     p = pr(y)
   
     @test issetequal(keys(p), -7:1:1-1)
     @test all(values(p) .≈ 1/8)
 
-    y = @dice uniform(DistIntOH{-8, 16}, -7, 3)
+    y = @alea uniform(DistIntOH{-8, 16}, -7, 3)
     p = pr(y)
   
     @test issetequal(keys(p), -7:1:3-1)
@@ -200,16 +200,16 @@ end
 @testset "DistIntOH division" begin
     x = DistIntOH{-8, 16}(7)
     y = DistIntOH{-8, 16}(-3)
-    p = pr(@dice x / y)
+    p = pr(@alea x / y)
     @test p[-2] ≈ 1.0
 
     # a = uniform(DistIntOH{-4, 8}, -4, 4)
     # b = uniform(DistIntOH{-4, 8}, -4, 4)
-    # @test_throws ProbException pr(@dice a/b)
+    # @test_throws ProbException pr(@alea a/b)
 
     x = DistIntOH{-5, 8}(-4)
     y = DistIntOH{-5, 8}(-4)
-    p = pr(@dice x / y)
+    p = pr(@alea x / y)
     @test p[1] ≈ 1.0
 
     for i = -4:3
@@ -217,9 +217,9 @@ end
             a = DistIntOH{-4, 8}(i)
             b = DistIntOH{-4, 8}(j)
             if (j == 0) | ((i == -4) & (j == -1))
-                # @test_throws ProbException pr(@dice a/b)
+                # @test_throws ProbException pr(@alea a/b)
             else
-                @test pr(@dice a/b)[i ÷ j] ≈ 1.0
+                @test pr(@alea a/b)[i ÷ j] ≈ 1.0
             end
         end
     end
@@ -228,16 +228,16 @@ end
 @testset "DistIntOH mod" begin
     x = DistIntOH{-8, 16}(7)
     y = DistIntOH{-8, 16}(-3)
-    p = pr(@dice x % y)
+    p = pr(@alea x % y)
     @test p[1] ≈ 1.0
 
     # a = uniform(DistIntOH{3}, -4, 4)
     # b = uniform(DistIntOH{3}, -4, 4)
-    # @test_throws ProbException pr(@dice a%b)
+    # @test_throws ProbException pr(@alea a%b)
 
     x = DistIntOH{-4, 8}(-4)
     y = DistIntOH{-4, 8}(-4)
-    p = pr(@dice x % y)
+    p = pr(@alea x % y)
     @test p[0] ≈ 1.0
 
     for i = -4:3
@@ -245,9 +245,9 @@ end
             a = DistIntOH{-4, 8}(i)
             b = DistIntOH{-4, 8}(j)
             if (j == 0)
-                # @test_throws ProbException pr(@dice a%b)
+                # @test_throws ProbException pr(@alea a%b)
             else
-                @test pr(@dice a%b)[i % j] ≈ 1.0
+                @test pr(@alea a%b)[i % j] ≈ 1.0
             end
         end
     end
@@ -273,7 +273,7 @@ end
         for j = -4:3
             a = DistIntOH{-4, 8}(i)
             b = DistIntOH{-4, 8}(j)
-            @test pr(@dice a < b)[i < j] ≈ 1.0
+            @test pr(@alea a < b)[i < j] ≈ 1.0
         end
     end
 

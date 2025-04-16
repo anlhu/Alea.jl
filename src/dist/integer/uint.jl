@@ -131,7 +131,7 @@ end
 
 function uniform_arith(::Type{DistUInt{W}}, start::Int, stop::Int)::DistUInt{W} where W
     # WARNING: will cause an error in certain cases where overflow is falsely detected
-    # instead use with the @dice macro or increase bit-width
+    # instead use with the @alea macro or increase bit-width
     @assert start >= 0
     @assert stop <= 2^W
     @assert stop > start
@@ -221,7 +221,7 @@ function triangle(t::Type{DistUInt{W}}, b::Int) where W
         x[i] = false
     end
     for i = W - b + 1:W
-        x[i] = Dice.ifelse(s, flip(1/2), flip((3n - 2)/ (4n-4)))
+        x[i] = Alea.ifelse(s, flip(1/2), flip((3n - 2)/ (4n-4)))
         y[i] = flip((n-2)/(3n-2))
         s = s | (x[i] & !y[i])
         n = n/2
@@ -242,7 +242,7 @@ function discrete(t::Type{DistUInt{W}}, p::Vector{Float64}) where W
                 flip(sum(prob[Int((s+e+1)/2):e])/sum(prob[s:e]))
             end
         else
-            (Dice.ifelse(p[length(p) - i + 1], recurse(p, i-1, Int((s+e+1)/2), e, prob), recurse(p, i-1, s, Int((s+e-1)/2), prob)))
+            (Alea.ifelse(p[length(p) - i + 1], recurse(p, i-1, Int((s+e+1)/2), e, prob), recurse(p, i-1, s, Int((s+e-1)/2), prob)))
         end
     end
 

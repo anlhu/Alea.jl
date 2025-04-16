@@ -1,4 +1,4 @@
-module Dice
+module Alea
 
 include("dist/dist.jl")
 include("inference/inference.jl")

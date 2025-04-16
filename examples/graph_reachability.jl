@@ -1,5 +1,5 @@
 using Revise
-using Dice
+using Alea
 
 function reachable(adjacency::Matrix, src::Int, dest::Int)
     n = size(adjacency, 1)

@@ -1,4 +1,4 @@
-using Dice
+using Alea
 
 uniq_count = 4
 half = Int(ceil(uniq_count/2))
@@ -17,7 +17,7 @@ rankings = [[3, 2, 1, 0],
             [1, 3, 2, 0],
             [1, 2, 3, 0]]
 
-c = @dice begin 
+c = @alea begin 
     ranks = [uniform(DistInt{bits}, 0, uniq_count) for i in 1:uniq_count]
     for i in 1:uniq_count
         for j in i+1:uniq_count

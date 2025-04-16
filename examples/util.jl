@@ -46,7 +46,7 @@ function discrete(dist_p_tups)
             first_half_end = (i + j - 1) ÷ 2
             first_half_p = prefix_sums[first_half_end] - prefix_sums[i] + dist_p_tups[i][2]
             total_p = prefix_sums[j] - prefix_sums[i] + dist_p_tups[i][2]
-            @dice_ite if flip(first_half_p/total_p)
+            @alea_ite if flip(first_half_p/total_p)
                 helper(i, first_half_end)
             else
                 helper(first_half_end+1, j)
@@ -70,7 +70,7 @@ function discrete_sbk(dist_p_tups)
     ans = last(dist_p_tups)[1]
     for i = (length(dist_p_tups) - 1):-1:1
         (val, weight) = dist_p_tups[i]
-        ans = @dice_ite if flip(v[val]) val else ans end
+        ans = @alea_ite if flip(v[val]) val else ans end
     end
     return ans
 end

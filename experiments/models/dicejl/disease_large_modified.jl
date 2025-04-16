@@ -1,4 +1,4 @@
-using Dice 
+using Alea 
 
 function binomial(n::DistUInt{W}, p, max::Int) where W 
     output = DistUInt{W}(0)

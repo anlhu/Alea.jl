@@ -1,5 +1,5 @@
 using Revise
-using Dice 
+using Alea 
 using BenchmarkTools
 
 function unsafesubtract(x::DistUInt{W}, y::DistUInt{W}) where W
@@ -59,7 +59,7 @@ end
 # for n=1:12
 #     @show n
 #     code = @showtime uniform_coprime(n)
-#     @show Dice.num_ir_nodes(code)
+#     @show Alea.num_ir_nodes(code)
 #     p = @showtime pr(code)[true]
 #     @show p
 #     println()

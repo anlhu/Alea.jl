@@ -1,11 +1,11 @@
 using Test
-using Dice
-using Dice: Flip, ifelse, num_ir_nodes
+using Alea
+using Alea: Flip, ifelse, num_ir_nodes
 using Distributions
 
 @testset "DistFixedPoint inference" begin
     x = DistFixedPoint{4, 2}([true, false, true, false]) # -1.5
-    @test Dice.bitwidth(x) == 4
+    @test Alea.bitwidth(x) == 4
 
     p = pr(x)
     @test p[-1.25] ≈ 0
@@ -13,7 +13,7 @@ using Distributions
     @test p[-1.75] ≈ 0
 
     x = DistFixedPoint{4, 2}(1.53)
-    @test Dice.bitwidth(x) == 4
+    @test Alea.bitwidth(x) == 4
 
     p = pr(x)
     @test p[1.5] ≈ 1
@@ -43,18 +43,18 @@ end
 @testset "DistFixedPoint expectation" begin
     y = DistFixedPoint{4, 3}([true, false, true, false])
     @test expectation(y) == -0.75
-    @test expectation(@dice y) == -0.75
+    @test expectation(@alea y) == -0.75
     @test variance(y) == 0.0
-    @test variance(@dice y) == 0.0
+    @test variance(@alea y) == 0.0
 
     y = DistFixedPoint{2, 0}([flip(0.1), flip(0.1)])
     p = pr(y)
     mean = reduce(+, [(key*value) for (key, value) in p])
     std_sq = reduce(+, [(key*key*value) for (key, value) in p]) - mean^2
     @test expectation(y) ≈ mean
-    @test expectation(@dice y) ≈ mean
+    @test expectation(@alea y) ≈ mean
     @test variance(y) ≈ std_sq
-    @test variance(@dice y) ≈ std_sq
+    @test variance(@alea y) ≈ std_sq
 end
 
 @testset "DistFixedPoint triangle" begin
@@ -82,7 +82,7 @@ end
 
     a = uniform(DistFixedPoint{3, 1}, 3)
     b = DistFixedPoint{3, 1}(-0.5)
-    @test_throws ProbException p = pr(@dice a + b)
+    @test_throws ProbException p = pr(@alea a + b)
 
     a = DistFixedPoint{3, 1}(1.5)
     b = DistFixedPoint{3, 1}(-1.0)
@@ -166,25 +166,25 @@ end
     map(a, b) do i, j
         fi = DistFixedPoint{4, 2}(i)
         fj = DistFixedPoint{4, 2}(j)
-        p = pr(@dice fi*fj)
+        p = pr(@alea fi*fj)
         @test p[floor(i*j * 2^2)/4] ≈ 1
     end
 
     a = uniform(DistFixedPoint{4, 2}, 2) - DistFixedPoint{4, 2}(0.5)
     b = uniform(DistFixedPoint{4, 2}, 2) - DistFixedPoint{4, 2}(0.5)
-    p = pr(@dice a*b)
+    p = pr(@alea a*b)
     @test p[0.25] ≈ 1/16
     @test p[0] ≈ 11/16
 
     a = DistFixedPoint{20, 0}(14.0) * DistFixedPoint{20, 0}(-7.0)
-    p = pr(@dice a)
+    p = pr(@alea a)
     @test p[-98.0] ≈ 1.0
 
     for i = -2.0:0.25:2-0.25
         for j = -2.0:0.25:2-0.25
             a = DistFixedPoint{4, 2}(i)
             b = DistFixedPoint{4, 2}(j)
-            c = @dice a*b
+            c = @alea a*b
             d = floor(i*j *4)/4
             if (d > 1.75) | (d < -2)
                 @test_throws ProbException pr(c)
@@ -246,14 +246,14 @@ end
 @testset "DistFixedPoint division" begin
     x = DistFixedPoint{5, 2}(0.5)
     y = DistFixedPoint{5, 2}(2.0)
-    c = @dice x/y
+    c = @alea x/y
     q = pr(c)
 
     for i = -4.0:0.25:4 - 0.25
         for j= -4.0:0.25:4 - 0.25
             x = DistFixedPoint{5, 2}(i)
             y = DistFixedPoint{5, 2}(j)
-            c = @dice x/y
+            c = @alea x/y
             ans = sign(i/j) * floor(abs(i/j) * 4)/4
             if (j == 0.0) | (ans >= 4.0) | (ans < -4.0)
                 @test_throws ProbException pr(c)
@@ -283,7 +283,7 @@ end
         for j = -2:0.5:1.5
             a = DistFixedPoint{3, 1}(i)
             b = DistFixedPoint{3, 1}(j)
-            @test pr(@dice a < b)[i < j] ≈ 1.0
+            @test pr(@alea a < b)[i < j] ≈ 1.0
         end
     end
 

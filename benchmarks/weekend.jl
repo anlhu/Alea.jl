@@ -1,11 +1,11 @@
 using Pkg; Pkg.activate(@__DIR__)
-using Dice, Distributions
+using Alea, Distributions
 
 precision = 5
 DFiP = DistFixedPoint{9+precision, precision}
 num_pieces = 128
 
-code = @dice begin
+code = @alea begin
 
   isWeekend = flip(2/7)
   hour = if isWeekend

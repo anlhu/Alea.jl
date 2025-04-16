@@ -1,4 +1,4 @@
-using Dice
+using Alea
 
 include("util.jl")
 char_freqs = get_char_freqs_from_url("https://raw.githubusercontent.com/teropa/nlp/master/resources/corpora/gutenberg/shakespeare-macbeth.txt")
@@ -44,7 +44,7 @@ function original_given_cipher(cipher_text, char_freqs)
 end
 
 # Distribution over original strings given observation
-k = @dice begin original_given_cipher(cipher_text, char_freqs) end
+k = @alea begin original_given_cipher(cipher_text, char_freqs) end
 dist = pr(k)
 print_dict(dist)
 

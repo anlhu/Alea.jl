@@ -1,6 +1,6 @@
-using Dice 
+using Alea 
 
-c = @dice begin
+c = @alea begin
     # a = uniform(DistInt{22},-1000, 1000)
     # b = uniform(DistInt{22},-1000, 1000)
     # c = uniform(DistInt{22},-1000, 1000)

@@ -1,9 +1,9 @@
 
-using Dice 
+using Alea 
 using BenchmarkTools
 
 function fun() 
-    c = @dice begin
+    c = @alea begin
         a = uniform(DistIntOH{-1000, 2001},-500, 501)
         b = uniform(DistIntOH{-1000, 2001},-500, 501)
         c = uniform(DistIntOH{-1000, 2001},-500, 501)

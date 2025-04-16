@@ -1,4 +1,4 @@
-using Dice 
+using Alea 
 
 function binomial(n::DistUIntOH{W}, p, max::Int) where W 
     output = DistUIntOH{W}(0)

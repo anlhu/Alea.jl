@@ -1,8 +1,8 @@
-using Dice
+using Alea
 using BenchmarkTools
 
 function fun() 
-    c = @dice begin 
+    c = @alea begin 
         uniq_count = 4
         bits = Int(floor(log2(uniq_count)) + 4)
 

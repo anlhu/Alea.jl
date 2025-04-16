@@ -1,5 +1,5 @@
 using Revise
-using Dice
+using Alea
 using BenchmarkTools
 
 # localARGS = ARGS
@@ -9,7 +9,7 @@ using BenchmarkTools
 
 function less(num_bits)
     nbpow = 2^num_bits
-    # code = @dice begin
+    # code = @alea begin
     a = discrete(DistUInt{num_bits+1}, [1/nbpow for _ in 1:nbpow])
     b = discrete(DistUInt{num_bits+1}, [1/nbpow for _ in 1:nbpow])
         # c = (a < b)

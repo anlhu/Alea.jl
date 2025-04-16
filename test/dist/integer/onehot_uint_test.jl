@@ -1,10 +1,10 @@
 using Test
-using Dice
-using Dice: Flip, num_ir_nodes
+using Alea
+using Alea: Flip, num_ir_nodes
 
 @testset "DistUIntOH inference" begin
     x = DistUIntOH{4}([false, false, true, false]) # 2
-    @test Dice.bitwidth(x) == 4
+    @test Alea.bitwidth(x) == 4
 
     p = pr(x)
     @test p[1] ≈ 0
@@ -33,7 +33,7 @@ using Dice: Flip, num_ir_nodes
 
     x = DistUIntOH{16}([false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false]) # 10
     y = DistUIntOH{16}([false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false]) # 3
-    p = pr(@dice if flip(0.1) x else y end)
+    p = pr(@alea if flip(0.1) x else y end)
     @test p[10] ≈ 0.1
     @test p[3] ≈ 0.9
 
@@ -60,7 +60,7 @@ end
     p = pr(t)
     @test issetequal(keys(p), 3 .+ (0:(8-1)))
     @test all(values(p) .≈ 1/8)
-    p = pr((@dice t - y2), ignore_errors=true)
+    p = pr((@alea t - y2), ignore_errors=true)
     @test issetequal(keys(p), 1 .+ (0:(8-1)))
     @test all(values(p) .≈ 1/8)
 
@@ -73,17 +73,17 @@ end
 
     w = uniform(DistUIntOH{16}, 4)
     z = uniform(DistUIntOH{16}, 4)
-    p = pr((@dice w + y - z), ignore_errors=true)
+    p = pr((@alea w + y - z), ignore_errors=true)
     n = 4
     for i=0:6
         @test p[i] ≈ (n - abs(i-(n-1)))/n^2
     end
 
     # @test_throws Exception pr(uniform(DistUIntOH{3}, 3) + uniform(DistUIntOH{3}, 3))
-    # @test_throws Exception pr(@dice uniform(DistUIntOH{3}, 3) + uniform(DistUIntOH{3}, 3))
+    # @test_throws Exception pr(@alea uniform(DistUIntOH{3}, 3) + uniform(DistUIntOH{3}, 3))
 
     # @test_throws Exception pr(uniform(DistUIntOH{3}, 3) - uniform(DistUIntOH{3}, 3))
-    # @test_throws Exception pr(@dice uniform(DistUIntOH{3}, 3) - uniform(DistUIntOH{3}, 3))
+    # @test_throws Exception pr(@alea uniform(DistUIntOH{3}, 3) - uniform(DistUIntOH{3}, 3))
     
     x = uniform(DistUIntOH{8}, 4) # uniform(0, 4)
     y = uniform(DistUIntOH{8}, 4)
@@ -106,7 +106,7 @@ end
 #     @test p[4] ≈ 0
 
 #     y = DistUIntOH{4}([flip(0.5), false, true, true]) # 3
-#     code = @dice convert(y, DistUIntOH{3})
+#     code = @alea convert(y, DistUIntOH{3})
 #     @test_throws Exception pr(code)
 
 #     y = DistUIntOH{4}([false, false, true, flip(0.5)]) # 3
@@ -148,7 +148,7 @@ end
 #     @test p[4] ≈ 0
 
 #     y = DistUIntOH{4}([flip(0.5), false, true, true]) # 3
-#     code = @dice convert(y, DistUIntOH{3})
+#     code = @alea convert(y, DistUIntOH{3})
 #     @test_throws Exception pr(code)
 
 #     y = DistUIntOH{4}([false, false, true, flip(0.5)]) # 3
@@ -162,7 +162,7 @@ end
 @testset "DistUIntOH expectation" begin
     y = DistUIntOH{4}([false, false, true, false])
     @test expectation(y) == 2.0
-    @test expectation(@dice y) == 2.0
+    @test expectation(@alea y) == 2.0
 
     y = uniform(DistUIntOH{8}, 0, 7)
     p = pr(y)
@@ -229,7 +229,7 @@ end
 
     x = uniform(DistUIntOH{16}, 4)
     y = uniform(DistUIntOH{16}, 4)
-    p = pr(@dice y*x)
+    p = pr(@alea y*x)
     @test p[0] ≈ 7/16
     @test p[9] ≈ 1/16
 end
@@ -237,15 +237,15 @@ end
 @testset "DistUIntOH division" begin
     x = DistUIntOH{16}(15)
     y = DistUIntOH{16}(3)
-    p = pr(@dice x / y)
+    p = pr(@alea x / y)
     @test p[5] ≈ 1.0
 
     a = uniform(DistUIntOH{8}, 0, 8)
     b = uniform(DistUIntOH{8}, 0, 8)
-    c = @dice a/b
+    c = @alea a/b
     @test_throws ProbException pr(c)
 
-    code = @dice begin
+    code = @alea begin
             a = uniform(DistUIntOH{8}, 1, 8)
             b = uniform(DistUIntOH{8}, 1, 8)
             c = a/b
@@ -259,7 +259,7 @@ end
         for j = 1:7
             a = DistUIntOH{8}(i)
             b = DistUIntOH{8}(j)
-            c = pr(@dice a/b)
+            c = pr(@alea a/b)
             @test c[floor(i/j)] ≈ 1.0
         end
     end
@@ -268,15 +268,15 @@ end
 @testset "DistUIntOH mod" begin
     x = DistUIntOH{16}(15)
     y = DistUIntOH{16}(3)
-    p = pr(@dice x % y)
+    p = pr(@alea x % y)
     @test p[0] ≈ 1.0
 
     a = uniform(DistUIntOH{8}, 0, 8)
     b = uniform(DistUIntOH{8}, 0, 8)
-    c = @dice a%b
+    c = @alea a%b
     @test_throws ProbException pr(c)
 
-    code = @dice begin
+    code = @alea begin
             a = uniform(DistUIntOH{8}, 1, 8)
             b = uniform(DistUIntOH{8}, 1, 8)
             c = a%b
@@ -290,7 +290,7 @@ end
         for j = 1:7
             a = DistUIntOH{8}(i)
             b = DistUIntOH{8}(j)
-            c = pr(@dice a%b)
+            c = pr(@alea a%b)
             @test c[floor(i%j)] ≈ 1.0
         end
     end

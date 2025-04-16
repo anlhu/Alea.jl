@@ -1,4 +1,4 @@
-using Dice
+using Alea
 
 localARGS = ARGS
 num_bits = parse(Int64, localARGS[1])

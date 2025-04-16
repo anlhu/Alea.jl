@@ -1,10 +1,10 @@
-using Dice
+using Alea
 using BenchmarkTools
 
 function fun() 
 
 
-    c = @dice begin
+    c = @alea begin
     players = Vector(undef, 6)
 
     players[1] = discrete(DistUIntOH{500}, [0.015625, 0.09375, 0.234375, 0.3125, 0.234375, 0.09375, 0.015625]) + DistUIntOH{500}(142);

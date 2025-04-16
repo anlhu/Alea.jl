@@ -53,7 +53,7 @@ for num in range(1, 4):
     ax = fig.add_subplot(1,3,num)
     ax.plot(range(len(imp_klds)),imp_klds,label="one-hot",linewidth=4, linestyle='dashed')
     ax.plot(range(len(col_klds)),col_klds,label="binary",linewidth=4, linestyle='dotted')
-    ax.plot(range(len(gibbs_klds)),gibbs_klds,label="Dice.jl",linewidth=4)
+    ax.plot(range(len(gibbs_klds)),gibbs_klds,label="Alea.jl",linewidth=4)
     ax.set_xlabel("Bits",fontsize=24)
     ax.set_yscale('log')
     ax.set_title(l[num-1], fontsize=24, y = 0.93, pad = -14)

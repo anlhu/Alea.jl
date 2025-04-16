@@ -1,6 +1,6 @@
-using Dice
+using Alea
 
-c = @dice begin
+c = @alea begin
     w = 10
     
     function T(mu, l, r) 

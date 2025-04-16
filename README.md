@@ -1,5 +1,5 @@
 
-# Arithmetic in Dice.jl
+# Arithmetic in Alea.jl
 
 [![Unit Tests](https://github.com/Juice-jl/Dice.jl/workflows/Unit%20Tests/badge.svg)](https://github.com/Juice-jl/Dice.jl/actions?query=workflow%3A%22Unit+Tests%22+branch%3Amain)  [![codecov](https://codecov.io/gh/Tractables/Dice.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/Tractables/Dice.jl)
 
@@ -12,7 +12,7 @@ Additional instructions for recreating the experiments are contained in these fo
 
  **TODO: add instructions**
 
- To properly setup `Dice.jl`,  follow the instructions below. For the most up-to-date version, go to the `main` branch.  
+ To properly setup `Alea.jl`,  follow the instructions below. For the most up-to-date version, go to the `main` branch.  
 
 ## Setup Instructions
 
@@ -20,11 +20,11 @@ Install Julia 1.7 or higher using [these instructions](https://julialang.org/dow
 
 Clone the repository and start julia in project mode for current folder:
 ```bash
-cd Dice.jl
+cd Alea.jl
 julia --project
 ```
 
-Install Dice and update dependencies (one can also use `precompile` or `build`):
+Install Alea and update dependencies (one can also use `precompile` or `build`):
 
 ```
 ] up

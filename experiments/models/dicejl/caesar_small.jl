@@ -1,8 +1,8 @@
-using Dice
+using Alea
 using BenchmarkTools
 
 function fun()
-    c = @dice begin 
+    c = @alea begin 
         char_freqs = [0.082, 0.018, 0.024, 0.04, 0.123, 0.022, 0.022, 0.066, 0.069, 0.001, 0.008, 0.045, 0.024, 0.069, 0.073, 0.018, 0.002, 0.055, 0.067, 0.092, 0.028, 0.009, 0.023, 0.001, 0.018, 0.001]
         key = uniform(DistUInt{7}, 0, 26)
         

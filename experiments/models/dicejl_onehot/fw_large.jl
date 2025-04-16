@@ -1,10 +1,10 @@
-using Dice 
+using Alea 
 using BenchmarkTools
 
 
 function fun()
 
-    c = @dice begin 
+    c = @alea begin 
         num_nodes = 8
         MAX = num_nodes * 3 * num_nodes
         w = Int(floor(log2(MAX))) + 2

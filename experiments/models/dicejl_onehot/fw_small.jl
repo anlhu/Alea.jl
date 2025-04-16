@@ -1,9 +1,9 @@
-using Dice 
+using Alea 
 using BenchmarkTools
 
 
 function fun() 
-    c = @dice begin 
+    c = @alea begin 
         num_nodes = 3
         MAX = 14
         w = Int(floor(log2(MAX))) + 2

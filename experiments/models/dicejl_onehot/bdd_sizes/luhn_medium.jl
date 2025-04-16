@@ -1,9 +1,9 @@
-using Dice
+using Alea
 using BenchmarkTools
 
 function fun()
 
-    c = @dice begin 
+    c = @alea begin 
         n = 6
 
         id = Vector(undef, n)

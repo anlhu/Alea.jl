@@ -1,4 +1,4 @@
-using Dice
+using Alea
 using BenchmarkTools
 
 # localARGS = ARGS
@@ -8,7 +8,7 @@ using BenchmarkTools
 
 function less(num_bits)
     nbpow = 2^num_bits
-    # code = @dice begin
+    # code = @alea begin
     a = discrete(DistUIntOH{nbpow}, [1/nbpow for _ in 1:nbpow])
     b = discrete(DistUIntOH{nbpow}, [1/nbpow for _ in 1:nbpow])
         # c = (a < b)

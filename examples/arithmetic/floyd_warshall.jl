@@ -1,9 +1,9 @@
-using Dice 
+using Alea 
 
 
 
 
-c = @dice begin 
+c = @alea begin 
     num_nodes = 6
     MAX = 3 * num_nodes * num_nodes
     w = Int(floor(log2(MAX))) + 2

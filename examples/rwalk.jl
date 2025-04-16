@@ -1,5 +1,5 @@
 using LinearAlgebra
-using Dice 
+using Alea 
 using BenchmarkTools
 
 function generate_graph(i)
@@ -27,7 +27,7 @@ function generate_lists(adjacency)
 end
 
 function program(nodes, steps, graph_lists)
-    @dice begin 
+    @alea begin 
     node_bits = Int(floor(log2(nodes))+1)
     cost_bits = Int(floor(log2((nodes+1)*steps))+1)
     # @show node_bits
@@ -87,7 +87,7 @@ println(num_nodes, " ", num_steps, " ", (median(test).time)/10^9)
 # @show z
 # a=zip(y[1], z)
 # @show a
-# x= @dice begin 
+# x= @alea begin 
 #     node_bits = Int(floor(log2(3))+1)
 #     @show node_bits
 #     state = DistUInt{node_bits}(0)

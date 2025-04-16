@@ -1,6 +1,6 @@
-using Dice
+using Alea
 
-c = @dice begin 
+c = @alea begin 
 curValue = uniform(DistInt{10}, 1, 51)
 tgtValue = uniform(DistInt{10}, 1, 51)
 
