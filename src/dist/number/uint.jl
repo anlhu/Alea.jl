@@ -328,14 +328,14 @@ function extract_flips(bit)
     =#
 
     if hasfield(typeof(bit), :ordering)
-        println("\t\t", bit)
+        # println("\t\t", bit)
         return [bit]
     elseif bit isa DistOr || bit isa DistAnd
-        if (bit isa DistOr)
-            println("\t++ OR")
-        else
-            println("\t++ AND")
-        end
+        # if (bit isa DistOr)
+        #     println("\t++ OR")
+        # else
+        #     println("\t++ AND")
+        # end
 
         return vcat(extract_flips(bit.x), extract_flips(bit.y))
     elseif bit isa DistNot
@@ -345,8 +345,40 @@ function extract_flips(bit)
 end
 
 
+const MAX_DEPTH = 100  # You can adjust this as needed
+
+function extract_flips_maxdepth(bit, depth::Int = 0)
+    if depth > MAX_DEPTH
+        println("\t!! Max depth reached at bit: ", bit)
+        return []
+    end
+
+    if hasfield(typeof(bit), :ordering)
+        println("\t\t", bit)
+        return [bit]
+    elseif bit isa DistOr || bit isa DistAnd
+        if (bit isa DistOr)
+            println("\t++ OR")
+        else
+            println("\t++ AND")
+        end
+
+        return vcat(
+            extract_flips_maxdepth(bit.x, depth + 1),
+            extract_flips_maxdepth(bit.y, depth + 1)
+        )
+    elseif bit isa DistNot
+        return extract_flips_maxdepth(bit.x, depth + 1)
+    end
+
+    return []
+end
+
+
 function Base.:(+)(x::DistUInt{W}, y::DistUInt{W}) where W
     z = Vector{AnyBool}(undef, W)
+
+    print("\n------Running addition between -----------\n\t\t", x, " - ", y)
 
     carry = false
     for i = W:-1:1
@@ -363,19 +395,20 @@ function Base.:(+)(x::DistUInt{W}, y::DistUInt{W}) where W
     =#
     traversal = z[1]
     traversal_flips = unique(extract_flips(traversal))
+    # traversal_flips = unique(extract_flips_maxdepth(traversal))
     orderings = [flip.ordering for flip in traversal_flips]     # Get available 'ordering' values to reassign to correctly ordered flips
     sort!(orderings)
-    println("-- Orderings: ", orderings)
+    # println("-- Orderings: ", orderings)
     ordering_idx = 1
     for bit in traversal_flips
         bit.ordering = orderings[ordering_idx]
         ordering_idx += 1
     end
 
-    println("\n\n+++ AFTER REORDERING: ")
-    for bit in traversal_flips
-        println("\t", bit)
-    end
+    # println("\n\n+++ AFTER REORDERING: ")
+    # for bit in traversal_flips
+    #     println("\t", bit)
+    # end
 
     DistUInt{W}(z)
 end
@@ -403,6 +436,9 @@ end
 function Base.:(-)(x::DistUInt{W}, y::DistUInt{W}) where W
     z = Vector{AnyBool}(undef, W)
     borrow = false
+
+    print("\n------Running SUBTRACTION between -----------\n\t\t", x, " - ", y)
+
     
 
     for i=W:-1:1
@@ -415,6 +451,7 @@ end
 
 function Base.:(<<)(x::DistUInt{W}, n) where W
     @assert 0 <= n
+    print("*********** Left SHIFT")
     DistUInt{W}(vcat(x.bits[n+1:end], falses(min(n,W))))
 end
 
