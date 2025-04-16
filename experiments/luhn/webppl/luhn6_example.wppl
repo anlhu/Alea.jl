@@ -53,5 +53,4 @@ var main = function(){
   condition(10-(post_sum % 10) == id[0]);
   return ps[0];
 };
-
 timeit(function(){Infer({method:'enumerate',model:main}).getDist(0)}).runtimeInMilliseconds
