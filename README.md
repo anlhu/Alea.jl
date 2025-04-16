@@ -8,6 +8,8 @@ This branch contains the Julia prototype implementation of the [Dice](https://gi
 * The microbenchmarks (Figure 5) are in `experiments/microbenchmarks/`
 * The experiments (Table 1) are in `experiments/models/`
 
+Since the paper was published in 2023, the repository has been renamed from `Dice.jl` to `Alea.jl`. Any reference to `Dice.jl` in the paper is now referred to as `Alea.jl` in this repository.
+
 Additional instructions for recreating the experiments are contained in these folders.
 
  **TODO: add instructions**
