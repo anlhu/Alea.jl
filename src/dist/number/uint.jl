@@ -378,7 +378,7 @@ end
 function Base.:(+)(x::DistUInt{W}, y::DistUInt{W}) where W
     z = Vector{AnyBool}(undef, W)
 
-    print("\n------Running addition between -----------\n\t\t", x, " - ", y)
+    println("\n------Running addition between -----------\n\t\t", x, " - ", y)
 
     carry = false
     for i = W:-1:1
@@ -437,21 +437,30 @@ function Base.:(-)(x::DistUInt{W}, y::DistUInt{W}) where W
     z = Vector{AnyBool}(undef, W)
     borrow = false
 
-    print("\n------Running SUBTRACTION between -----------\n\t\t", x, " - ", y)
-
-    
+    println("\n--- SUBTRACTION: \n ++ X:")
 
     for i=W:-1:1
         z[i] = xor(x.bits[i], y.bits[i], borrow)
         borrow = ifelse(borrow, !x.bits[i] | y.bits[i], !x.bits[i] & y.bits[i])
     end
     errorcheck() & borrow && error("integer underflow in `-`")
+
+    traversal = z[1]
+    traversal_flips = unique(extract_flips(traversal))
+    orderings = [flip.ordering for flip in traversal_flips]     # Get available 'ordering' values to reassign to correctly ordered flips
+    sort!(orderings)
+    println("-- Orderings: ", orderings)
+    ordering_idx = 1
+    for bit in traversal_flips
+        bit.ordering = orderings[ordering_idx]
+        ordering_idx += 1
+    end
+
     DistUInt{W}(z)
 end
 
 function Base.:(<<)(x::DistUInt{W}, n) where W
     @assert 0 <= n
-    print("*********** Left SHIFT")
     DistUInt{W}(vcat(x.bits[n+1:end], falses(min(n,W))))
 end
 
