@@ -7,42 +7,79 @@ Instructions for using the example code are given below. These assume you have a
 ## Instructions
 
 ### Dice.jl
-This folder contains 3 files:
-- `luhn6_example.jl` is an example Luhn file with 6 ID digits; it can be run using the following command 
+
+The `dicejl` directory consists of the following files:
+- `luhn6_example.jl` is an example Luhn file with 6 ID digits; it can be run using the following command. It reports the time taken to run this program.
 
 ```bash
 julia --project luhn6_example.jl
 ```
 
- and will output a time computed with the Julia BenchmarkTools utility.
+- `luhn.jl` is a Luhn template program which can take a varying argument `n`, representing the number of digits in the ID. As an example, the following command runs the Luhn program for 6 digits. `n` can range from 2-10.
 
-- `luhn.jl` is a Luhn template program which can take a varying argument `n`, representing the number of digits in the ID. For example, `julia --project luhn.jl 6` will result in the same result as running `luhn6_example.jl`. `n` can range from 2-10. 
+```bash
+julia --project luhn.jl 6
+```
 
-- `run.sh` is a shell script calling `luhn.jl` with all arguments from 2 to 10, and writing the time results to a file ` dicejl_luhn.txt`. 
+Now to replicate the results in Figure 3, run the following commands. It writes the results to a file `dicejl_luhn.txt` that can be used later to create the plots
+
+```bash
+./run.sh
+```
 
 ### WebPPL
 
-This folder contains 3 files:
+The `webppl` folder consists of the following files:
 
-- `luhn6_example.wppl` is an example Luhn file with 6 ID digits as above. To run it, use the command `webppl luhn6_example.wppl --require webppl-timeit`; this will return a time in milliseconds computed with `webppl-timeit`. 
+- `luhn6_example.wppl` is an example Luhn file with 6 ID digits. To run it, use the following command
 
-- `luhn.wppl` is a template file as above, taking a named argument `n` representing the number of digits in the id. To replicate the program above, use the command `webppl luhn.wppl --require webppl-timeit -- --n 6`. As above, `n` can range from 2-10.
+```bash
+webppl luhn6_example.wppl --require webppl-timeit
+```
+
+- `luhn.wppl` is a template file as above, taking a named argument `n` representing the number of digits in the id. It can be run using the following command. As above, `n` can range from 2-10.
+
+```bash
+webppl luhn.wppl --require webppl-timeit -- --n 6
+```
 
 - `run.sh` is again a shell script calling `luhn.wppl` with arguments 2-10, and writing the results to a file `webppl_luhn.txt`.
 
 ### Psi
 
-This folder contains 4 files:
+The `psi` folder contains 4 files:
 
-- `luhn4_example.psi` is an example Luhn file with 4 ID digits. To run it, use the command `psi luhn4_example.psi`. As there is no built-in timing utility, we used the Bash `time` command to measure time for Psi. To call using the Psi DP algorithm, add the `--dp` flag (as in `psi --dp luhn4_example.psi`). 
+- `luhn4_example.psi` is an example Luhn file with 4 ID digits. This file can be run with the following command:
 
-- `gen_psi_luhn.py` is a Python script which takes a single parameter `n` and outputs a Psi Luhn program corresponding to `n` ID digits. For example, to generate a Psi program equivalent to `luhn4_example.psi`, call `python gen_psi_luhn.py 4 > output.psi`.
+```bash
+psi luhn4_example.psi
+psi --dp luhn4_example.psi
+``` 
 
-- `run.sh` and `run_dp.sh` are two shell scripts which iterate over ID lengths 2-10, first calling `gen_psi_luhn.py` then Psi to get a runtime in seconds for each length. They correspond to Psi and Psi (DP), and output to files `psi_luhn.txt` and `psi_dp_luhn.txt`, respectively. 
+As there is no built-in timing utility, we used the Bash `time` command to measure time for Psi. 
+
+- `gen_psi_luhn.py` is a Python script which takes a single parameter `n` and outputs a Psi Luhn program corresponding to `n` ID digits. For example, to generate a Psi program equivalent to `luhn4_example.psi`, call 
+
+```bash
+python gen_psi_luhn.py 4 > output.psi
+```
+
+- `run.sh` and `run_dp.sh` are two shell scripts which iterate over ID lengths 2-10 to replicate the results in Figure 3. They correspond to Psi and Psi (DP), and output to files `psi_luhn.txt` and `psi_dp_luhn.txt`, respectively. 
+
+```bash
+./run.sh
+./run_dp.sh
+```
 
 Note that for WebPPL and Psi, the provided scripts only run a single trial for each experiment. 
 
-## Plotting
+## Plot the Figure
+
+Run the following command to replicate Figure 3. This will recreate `luhn.png` using the results of the latest run.
+
+```bash
+python3 luhn.py
+```
 
 
 
