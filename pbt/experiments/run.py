@@ -214,13 +214,32 @@ class ExperimentRunner:
         shutil.copy2(unique_curves_pattern, output_path)
         print(f"Plot saved to: {output_path}")
 
-def run_experiments_parallel(experiments: List[Experiment], runner: ExperimentRunner) -> List[str]:
+    def handle_figure4_plots(self, experiments: List[Experiment], log_paths: List[str]) -> None:
+        """Handle distribution plots for figure 4 experiments."""
+
+        for exp, log_path in zip(experiments, log_paths):
+
+    def handle_figure10_plots(self, experiments: List[Experiment], log_paths: List[str]) -> None:
+        """Handle distribution plots for figure 10 experiments."""
+        pass
+
+def run_experiments_parallel(experiments: List[List[Experiment]], runner: ExperimentRunner) -> List[List[str]]:
     """Run experiments in parallel using multiprocessing and return log paths."""
-    num_workers = min(len(experiments), multiprocessing.cpu_count())
+    experiments_flat = [exp for sublist in experiments for exp in sublist]
+    num_workers = min(len(experiments_flat), multiprocessing.cpu_count())
     pool = multiprocessing.Pool(processes=num_workers)
-    log_paths = pool.map(runner.run_single_experiment, experiments)
+    log_paths_flat = pool.map(runner.run_single_experiment, experiments_flat)
     pool.close()
     pool.join()
+
+    # Restore structure
+    log_paths: List[List[str]] = [[] for _ in experiments]
+    log_path_i = 0
+    for exp_group_i in range(len(experiments)):
+        for _ in experiments[exp_group_i]:
+            log_paths[exp_group_i].append(log_paths_flat[log_path_i])
+            log_path_i += 1
+
     return log_paths
 
 def create_figure2_experiments(args: argparse.Namespace) -> List[Experiment]:
@@ -320,6 +339,84 @@ def create_figure3_experiment(args: argparse.Namespace) -> Experiment:
         ]
     )
 
+# Figure 4: RBT ablation, cumulative unique RBTs
+# Entropy (Bounds)
+# -f LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3) Pair{SpecEntropy{RBT},Float64}[SpecEntropy{RBT}(2,200,always_true)=>0.03] 2000 0.1
+
+# Specification (Bounds)
+# -f LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3) Pair{SatisfyPropertyLoss{RBT},Float64}[SatisfyPropertyLoss{RBT}(isRBTdist)=>0.03] 2000 0.1
+
+# Specification Entropy (Bounds)
+# -f LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3) Pair{SpecEntropy{RBT},Float64}[SpecEntropy{RBT}(2,200,isRBT)=>0.3] 2000 0.1
+
+def create_figure4_experiments(args: argparse.Namespace) -> List[Experiment]:
+    """Create the list of experiments for figure 4."""
+    return [
+        Experiment(
+            name='Entropy',
+            command=[
+                "julia", "--project", "pbt/experiments/tool.jl",
+                "-f",
+                "LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3) Pair{SpecEntropy{RBT},Float64}[SpecEntropy{RBT}(2,200,always_true)=>0.03]",
+                str(args.fig4_epochs),
+                "0.1"
+            ]
+        ),
+        Experiment(
+            name='Specification',
+            command=[
+                "julia", "--project", "pbt/experiments/tool.jl",
+                "-f",
+                "LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3) Pair{SatisfyPropertyLoss{RBT},Float64}[SatisfyPropertyLoss{RBT}(isRBTdist)=>0.03]",
+                str(args.fig4_epochs),
+                "0.1"
+            ]
+        ),
+        Experiment(
+            name='Specification Entropy',
+            command=[
+                "julia", "--project", "pbt/experiments/tool.jl",
+                "-f",
+                "LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3) Pair{SpecEntropy{RBT},Float64}[SpecEntropy{RBT}(2,200,isRBT)=>0.3]",
+                str(args.fig4_epochs),
+                "0.1"
+            ]
+        ),
+    ]
+
+# Figure 10: RBT ablation on bounds, cumulative unique RBTs
+
+# Specification Entropy (Bounds)
+# -f LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3) Pair{SpecEntropy{RBT},Float64}[SpecEntropy{RBT}(2,200,isRBT)=>0.3] 2000 0.1
+
+# Specification Entropy (No bounds)
+#-f LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3) Pair{SpecEntropy{RBT},Float64}[SpecEntropy{RBT}(2,200,isRBT)=>0.3] 2000 0.0
+
+def create_figure10_experiments(args: argparse.Namespace) -> List[Experiment]:
+    """Create the experiment for figure 10."""
+    return [
+        Experiment(
+            name='Specification Entropy',
+            command=[
+                "julia", "--project", "pbt/experiments/tool.jl",
+                "-f",
+                "LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3) Pair{SpecEntropy{RBT},Float64}[SpecEntropy{RBT}(2,200,isRBT)=>0.3]",
+                str(args.fig10_epochs),
+                "0.1"
+            ]
+        ),
+        Experiment(
+            name='Specification Entropy (No bounds)',
+            command=[
+                "julia", "--project", "pbt/experiments/tool.jl",
+                "-f",
+                "LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3) Pair{SpecEntropy{RBT},Float64}[SpecEntropy{RBT}(2,200,isRBT)=>0.3]",
+                str(args.fig10_epochs),
+                "0.0"
+            ]
+        )
+    ]
+
 def main():
     parser = argparse.ArgumentParser(description='Run experiments and generate distribution plots')
     parser.add_argument('--verbose', action='store_true', help='Print detailed file paths')
@@ -327,23 +424,29 @@ def main():
     parser.add_argument('--all', action='store_true', help='Run all figures')
     parser.add_argument('--fig2', action='store_true', help='Run figure 2 experiments')
     parser.add_argument('--fig3', action='store_true', help='Run figure 3 experiment')
+    parser.add_argument('--fig4', action='store_true', help='Run figure 4 experiments')
+    parser.add_argument('--fig10', action='store_true', help='Run figure 10 experiments')
     parser.add_argument('--fast', action='store_true', help='Use faster training settings (fewer epochs, higher learning rates)')
     parser.add_argument('--fig2-learning-rate', type=float, help='Learning rate for figure 2 experiments')
     parser.add_argument('--fig2-epochs', type=int, help='Number of epochs for figure 2 experiments')
     parser.add_argument('--fig3-learning-rate', type=float, help='Learning rate for figure 3 experiment')
     parser.add_argument('--fig3-epochs', type=int, help='Number of epochs for figure 3 experiment')
     parser.add_argument('--fig3-samples-per-batch', type=int, help='Number of samples per batch for figure 3 experiment')
+    parser.add_argument('--fig4-epochs', type=int, help='Number of epochs for figure 4 experiments')
+    parser.add_argument('--fig10-epochs', type=int, help='Number of epochs for figure 10 experiments')
     args, unknown = parser.parse_known_args()
     
     # Validate that at least one figure is selected
-    if not (args.all or args.fig2 or args.fig3):
+    if not (args.all or args.fig2 or args.fig3 or args.fig4 or args.fig10):
         print("Error: Must specify at least one figure to run. Use --all, --fig2, or --fig3.")
         sys.exit(1)
     
     # Check which figure-specific flags were explicitly specified
     fig2_flags_specified = any(arg.startswith('--fig2-') for arg in unknown)
     fig3_flags_specified = any(arg.startswith('--fig3-') for arg in unknown)
-    
+    fig4_flags_specified = any(arg.startswith('--fig4-') for arg in unknown)
+    fig10_flags_specified = any(arg.startswith('--fig10-') for arg in unknown)
+
     # Validate that figure-specific parameters are only used when their figure is enabled
     if fig2_flags_specified and not (args.all or args.fig2):
         print("Error: Figure 2 parameters specified but figure 2 is not enabled. Use --fig2 or --all.")
@@ -351,6 +454,14 @@ def main():
     
     if fig3_flags_specified and not (args.all or args.fig3):
         print("Error: Figure 3 parameters specified but figure 3 is not enabled. Use --fig3 or --all.")
+        sys.exit(1)
+    
+    if fig4_flags_specified and not (args.all or args.fig4):
+        print("Error: Figure 4 parameters specified but figure 4 is not enabled. Use --fig4 or --all.")
+        sys.exit(1)
+    
+    if fig10_flags_specified and not (args.all or args.fig10):
+        print("Error: Figure 10 parameters specified but figure 10 is not enabled. Use --fig10 or --all.")
         sys.exit(1)
     
     # Set default parameters based on --fast flag
@@ -361,6 +472,8 @@ def main():
         args.fig3_learning_rate = args.fig3_learning_rate if args.fig3_learning_rate is not None else 1.0
         args.fig3_epochs = args.fig3_epochs if args.fig3_epochs is not None else 200
         args.fig3_samples_per_batch = args.fig3_samples_per_batch if args.fig3_samples_per_batch is not None else 50
+        args.fig4_epochs = args.fig4_epochs if args.fig4_epochs is not None else 200
+        args.fig10_epochs = args.fig10_epochs if args.fig10_epochs is not None else 200
     else:
         # Normal defaults
         args.fig2_learning_rate = args.fig2_learning_rate if args.fig2_learning_rate is not None else 0.1
@@ -368,27 +481,41 @@ def main():
         args.fig3_learning_rate = args.fig3_learning_rate if args.fig3_learning_rate is not None else 0.3
         args.fig3_epochs = args.fig3_epochs if args.fig3_epochs is not None else 2000
         args.fig3_samples_per_batch = args.fig3_samples_per_batch if args.fig3_samples_per_batch is not None else 200
+        args.fig4_epochs = args.fig4_epochs if args.fig4_epochs is not None else 2000
+        args.fig10_epochs = args.fig10_epochs if args.fig10_epochs is not None else 2000
+
     # Create experiment runner with args
     runner = ExperimentRunner(verbose=args.verbose, args=args)
     
     # Create experiments
     figure2_experiments = create_figure2_experiments(args)
     figure3_experiment = create_figure3_experiment(args)
+    figure4_experiments = create_figure4_experiments(args)
+    figure10_experiments = create_figure10_experiments(args)
     
     # Run the requested figures
     if args.all:
         if args.parallel:
             # Run all experiments in parallel
-            all_experiments = figure2_experiments + [figure3_experiment]
+            all_experiments = [figure2_experiments, [figure3_experiment], figure4_experiments, figure10_experiments]
             log_paths = run_experiments_parallel(all_experiments, runner)
+
+            figure2_log_paths, (figure3_log_path,), figure4_log_paths, figure10_log_paths = log_paths
             
             # Handle figure 2 plots
-            for exp, log_path in zip(figure2_experiments, log_paths[:-1]):
+            for exp, log_path in zip(figure2_experiments, figure2_log_paths):
                 runner.handle_figure2_plots(exp, log_path)
             
             # Handle figure 3 plots
-            log_dir = os.path.dirname(log_paths[-1])
+            log_dir = os.path.dirname(figure3_log_path)
             runner.copy_figure3_plots(log_dir)
+
+            # Handle figure 4 plots
+            runner.handle_figure4_plots(figure4_experiments, figure4_log_paths)
+            
+            # Handle figure 10 plots
+            runner.handle_figure10_plots(figure10_experiments, figure10_log_paths)
+            
         else:
             # Run figures sequentially
             for exp in figure2_experiments:
