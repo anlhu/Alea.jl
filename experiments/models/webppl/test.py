@@ -3,7 +3,7 @@ from statistics import median
 import csv
 
 # based off of Ryan's microbenchmark test.py 
-OUTPUT_FILENAME = "webppl-results.csv"
+OUTPUT_FILENAME = "webppl_results.csv"
 
 # command to run webppl
 # replace with path if necessary

@@ -7,7 +7,7 @@ from statistics import median
 import csv
 
 # based off of Ryan's microbenchmark test.py 
-OUTPUT_FILENAME = "psi-results.csv"
+OUTPUT_FILENAME = "psi_results.csv"
 
 # command to run psi
 # replace with path if necessary
