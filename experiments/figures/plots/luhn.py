@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
 
-x = [2, 3, 4, 5, 6, 7, 8]
+x = [2, 3, 4, 5, 6, 7, 8, 9]
 webppl = [0.0048, 0.0228, 0.1288, 0.6068, 5.241, 59.4592, 622.5, 5582.102]
 dp = [0.0762, 1.0858, 16.904, 225.823]
 psi = [0.4122, 56.632, 7966.656]
