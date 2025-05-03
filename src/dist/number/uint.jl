@@ -1,6 +1,6 @@
 export DistUInt, DistUInt8, DistUInt16, DistUInt32, DistUInt64,
     uniform, uniform_arith, uniform_ite, triangle, discrete, unif, unif_obs,
-    flip_reciprocal, unif2, unif_half2, unif_approx, unif_half_approx, unif_half
+    flip_reciprocal, unif2, unif_half2, unif_approx, unif_half_approx, unif_half, popcount
 
 ##################################
 # types, structs, and constructors
@@ -344,6 +344,11 @@ function Base.:(<<)(x::DistUInt{W}, n) where W
     DistUInt{W}(vcat(x.bits[n+1:end], falses(min(n,W))))
 end
 
+function Base.:(>>)(x::DistUInt{W}, n) where W
+    @assert 0 <= n
+    DistUInt{W}(vcat(falses(min(n,W)), x.bits[1:W - min(n,W)]))
+end
+
 function Base.:(*)(x::DistUInt{W}, y::DistUInt{W}) where W
     z = zero(DistUInt{W})
     for i = W:-1:1
@@ -353,8 +358,38 @@ function Base.:(*)(x::DistUInt{W}, y::DistUInt{W}) where W
     z
 end 
 
+
+# Function: counts number of 1's in x 
+function popcount(x::DistUInt{W}) where W 
+    count(v -> v == 1, x.bits)
+end
+
+# Function: Counts number of trailing zeros
+function Base.trailing_zeros(x::DistUInt{W}) where W
+    for i in 1:W
+        bit_value = x.bits[W - i + 1]
+
+        if bit_value != 0
+            return i-1
+        end
+        
+    end
+    return W
+end
+
 function Base.:/(x::DistUInt{W}, y::DistUInt{W}) where W
     errorcheck() & iszero(y) && error("division by zero")
+    
+    # Power-of-two check: only one bit set in y
+    is_pow2 = (popcount(y) == 1)
+    if is_pow2
+        shift_amount = trailing_zeros(y)
+
+        shifted_var = (x >> shift_amount).bits
+        return DistUInt{W}(shifted_var)
+    end
+
+
     ans = Vector(undef, W)
     x_proxy = zero(DistUInt{W})
     for i = 1:W
