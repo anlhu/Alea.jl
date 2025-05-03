@@ -171,9 +171,11 @@ class ExperimentRunner:
         self.plot_distributions(initial_dist, trained_dist, plot_path, 
                               experiment.target_type or 'uniform', experiment.name)
         print(f"Plot saved to: {plot_path}")
-    
-    def copy_figure3_plots(self, log_dir: str) -> None:
-        """Copy plots for figure 3 from the log directory."""
+
+    def handle_figure3_plots(self, _: List[Experiment], log_paths: List[str]) -> None:
+        figure3_log_path, = log_paths
+        log_dir = os.path.dirname(figure3_log_path)
+
         if self.args is None:
             print("Error: ExperimentRunner needs args to handle figure 3 plots")
             sys.exit(1)
@@ -216,31 +218,37 @@ class ExperimentRunner:
 
     def handle_figure4_plots(self, experiments: List[Experiment], log_paths: List[str]) -> None:
         """Handle distribution plots for figure 4 experiments."""
-
-        for exp, log_path in zip(experiments, log_paths):
+        pass
 
     def handle_figure10_plots(self, experiments: List[Experiment], log_paths: List[str]) -> None:
         """Handle distribution plots for figure 10 experiments."""
         pass
 
-def run_experiments_parallel(experiments: List[List[Experiment]], runner: ExperimentRunner) -> List[List[str]]:
-    """Run experiments in parallel using multiprocessing and return log paths."""
-    experiments_flat = [exp for sublist in experiments for exp in sublist]
-    num_workers = min(len(experiments_flat), multiprocessing.cpu_count())
-    pool = multiprocessing.Pool(processes=num_workers)
-    log_paths_flat = pool.map(runner.run_single_experiment, experiments_flat)
-    pool.close()
-    pool.join()
+    def run_experiments_parallel(self, experiments: List[List[Experiment]]) -> List[List[str]]:
+        """Run experiments in parallel using multiprocessing and return log paths."""
+        experiments_flat = [exp for sublist in experiments for exp in sublist]
+        num_workers = min(len(experiments_flat), multiprocessing.cpu_count())
+        pool = multiprocessing.Pool(processes=num_workers)
+        log_paths_flat = pool.map(self.run_single_experiment, experiments_flat)
+        pool.close()
+        pool.join()
 
-    # Restore structure
-    log_paths: List[List[str]] = [[] for _ in experiments]
-    log_path_i = 0
-    for exp_group_i in range(len(experiments)):
-        for _ in experiments[exp_group_i]:
-            log_paths[exp_group_i].append(log_paths_flat[log_path_i])
-            log_path_i += 1
+        # Restore structure
+        log_paths: List[List[str]] = [[] for _ in experiments]
+        log_path_i = 0
+        for exp_group_i in range(len(experiments)):
+            for _ in experiments[exp_group_i]:
+                log_paths[exp_group_i].append(log_paths_flat[log_path_i])
+                log_path_i += 1
 
-    return log_paths
+        return log_paths
+
+    def run_experiments_sequential(self, experiments: List[List[Experiment]]) -> List[List[str]]:
+        """Run experiments sequentially and return log paths."""
+        return [
+            [self.run_single_experiment(experiment) for experiment in experiment_group]
+            for experiment_group in experiments
+        ]
 
 def create_figure2_experiments(args: argparse.Namespace) -> List[Experiment]:
     """Create the list of experiments for figure 2."""
@@ -325,19 +333,21 @@ def create_figure2_experiments(args: argparse.Namespace) -> List[Experiment]:
         )
     ]
 
-def create_figure3_experiment(args: argparse.Namespace) -> Experiment:
-    """Create the experiment for figure 3."""
-    return Experiment(
-        name='stlc_unique_types',
-        command=[
-            "julia", "--project", "pbt/experiments/tool.jl",
+def create_figure3_experiments(args: argparse.Namespace) -> List[Experiment]:
+    """Create the experiments for figure 3."""
+    return [
+        Experiment(
+            name='stlc_unique_types',
+            command=[
+                "julia", "--project", "pbt/experiments/tool.jl",
             "-f",
             "LangSiblingDerivedGenerator{STLC}(Main.Expr.t,Pair{Type,Integer}[Main.Expr.t=>5,Main.Typ.t=>2],2,3)",
             f"Pair{{FeatureSpecEntropy{{STLC}},Float64}}[FeatureSpecEntropy{{STLC}}(1,{args.fig3_samples_per_batch},wellTyped,typecheck_ft,true)=>{args.fig3_learning_rate}]",
             str(args.fig3_epochs),
             "0.0"
-        ]
-    )
+            ]
+        )
+    ]
 
 # Figure 4: RBT ablation, cumulative unique RBTs
 # Entropy (Bounds)
@@ -489,62 +499,36 @@ def main():
     
     # Create experiments
     figure2_experiments = create_figure2_experiments(args)
-    figure3_experiment = create_figure3_experiment(args)
+    figure3_experiments = create_figure3_experiments(args)
     figure4_experiments = create_figure4_experiments(args)
     figure10_experiments = create_figure10_experiments(args)
     
     # Run the requested figures
-    if args.all:
-        if args.parallel:
-            # Run all experiments in parallel
-            all_experiments = [figure2_experiments, [figure3_experiment], figure4_experiments, figure10_experiments]
-            log_paths = run_experiments_parallel(all_experiments, runner)
-
-            figure2_log_paths, (figure3_log_path,), figure4_log_paths, figure10_log_paths = log_paths
-            
-            # Handle figure 2 plots
-            for exp, log_path in zip(figure2_experiments, figure2_log_paths):
-                runner.handle_figure2_plots(exp, log_path)
-            
-            # Handle figure 3 plots
-            log_dir = os.path.dirname(figure3_log_path)
-            runner.copy_figure3_plots(log_dir)
-
-            # Handle figure 4 plots
-            runner.handle_figure4_plots(figure4_experiments, figure4_log_paths)
-            
-            # Handle figure 10 plots
-            runner.handle_figure10_plots(figure10_experiments, figure10_log_paths)
-            
-        else:
-            # Run figures sequentially
-            for exp in figure2_experiments:
-                log_path = runner.run_single_experiment(exp)
-                runner.handle_figure2_plots(exp, log_path)
-            
-            log_path = runner.run_single_experiment(figure3_experiment)
-            log_dir = os.path.dirname(log_path)
-            runner.copy_figure3_plots(log_dir)
+    experiment_groups = []
+    experiment_groups.append(figure2_experiments if args.fig2 or args.all else [])
+    experiment_groups.append(figure3_experiments if args.fig3 or args.all else [])
+    experiment_groups.append(figure4_experiments if args.fig4 or args.all else [])
+    experiment_groups.append(figure10_experiments if args.fig10 or args.all else [])
+    if args.parallel:
+        log_paths = runner.run_experiments_parallel(experiment_groups)
     else:
-        if args.fig2:
-            if args.parallel:
-                log_paths = run_experiments_parallel(figure2_experiments, runner)
-                for exp, log_path in zip(figure2_experiments, log_paths):
-                    runner.handle_figure2_plots(exp, log_path)
-            else:
-                for exp in figure2_experiments:
-                    log_path = runner.run_single_experiment(exp)
-                    runner.handle_figure2_plots(exp, log_path)
-        if args.fig3:
-            if args.parallel:
-                log_paths = run_experiments_parallel([figure3_experiment], runner)
-                log_dir = os.path.dirname(log_paths[0])
-                runner.copy_figure3_plots(log_dir)
-            else:
-                log_path = runner.run_single_experiment(figure3_experiment)
-                log_dir = os.path.dirname(log_path)
-                runner.copy_figure3_plots(log_dir)
+        log_paths = runner.run_experiments_sequential(experiment_groups)
 
+    figure2_log_paths, figure3_log_paths, figure4_log_paths, figure10_log_paths = log_paths
+
+    if args.fig2:
+        for exp, log_path in zip(figure2_experiments, figure2_log_paths):
+            runner.handle_figure2_plots(exp, log_path)
+
+    if args.fig3:
+        runner.handle_figure3_plots(figure3_experiments, figure3_log_paths)
+
+    if args.fig4:
+        runner.handle_figure4_plots(figure4_experiments, figure4_log_paths)
+
+    if args.fig10:
+        runner.handle_figure10_plots(figure10_experiments, figure10_log_paths)
+            
 if __name__ == "__main__":
     main()
 
