@@ -89,16 +89,24 @@ def run_training_run(verbose: bool, run: TrainingRun) -> TrainingResult:
 
 def run_experiments_parallel(config: Config, experiments: List[Experiment]) -> List[ExperimentResult]:
     experiment_results = [ ExperimentResult({}) for _ in experiments ]
-    jobs = [
-        (i, key, training_run)
-        for (i, experiment) in enumerate(experiments)
-        for (key, training_run) in experiment.training_runs.items()
-    ]
+    
+    # Create jobs with just the necessary arguments
+    jobs = []
+    job_indices = []  # Keep track of which experiment and key each job belongs to
+    for i, experiment in enumerate(experiments):
+        for key, training_run in experiment.training_runs.items():
+            jobs.append((config.args.verbose, training_run))
+            job_indices.append((i, key))
+    
+    # Run jobs in parallel
     num_workers = min(len(jobs), multiprocessing.cpu_count())
     pool = multiprocessing.Pool(processes=num_workers)
-    job_results = pool.map(lambda job: run_training_run(config.args.verbose, job[2]), jobs)
-    for (i, key, _), result in zip(jobs, job_results):
+    job_results = pool.starmap(run_training_run, jobs)
+    
+    # Map results back to their experiments
+    for (i, key), result in zip(job_indices, job_results):
         experiment_results[i].training_results[key] = result
+    
     return experiment_results
 
 def run_experiments_sequential(config: Config, experiments: List[Experiment]) -> List[ExperimentResult]:
