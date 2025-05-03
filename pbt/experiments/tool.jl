@@ -13,6 +13,7 @@ TAG = "v119_4321"
 TAG = "v120_stlctbeval"
 TAG = "v121_8sizeonly"
 TAG = "v122_more_ablation"
+TAG = "v133_artifact"
 OUT_TOP_DIR = joinpath(@__DIR__, "../../tuning-output")
 
 args = ARGS
@@ -20,6 +21,8 @@ allow_overwrite = "-f" ∈ args
 args = filter(a -> a != "-f", args)
 plot_only = "-p" in args
 args = filter(a -> a != "-p", args)
+mk_unique_curves = "-u" in args
+args = filter(a -> a != "-u", args)
 
 if plot_only
     # TAG = "v1110_weighted_se"
@@ -118,7 +121,7 @@ println("Logging to $(log_path)")
 println()
 
 if !plot_only
-    run_benchmark(rs, generation_params, loss_config_weight_pairs, epochs, bound)
+    run_benchmark(rs, generation_params, loss_config_weight_pairs, epochs, bound, mk_unique_curves)
 end
 make_plots(rs, generation_params, loss_config_weight_pairs, epochs, bound)
 t′ = now()

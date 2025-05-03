@@ -30,6 +30,7 @@ function run_benchmark(
     loss_config_weight_pairs::AbstractVector{<:Pair{<:LossConfig{T}, <:Real}},
     epochs::Integer,
     bound::Real,
+    mk_unique_curves::Bool,
 ) where T
     println_flush(rs.io, "Building generation computation graph...")
     time_build_generation = @elapsed generation = generate(rs, generation_params)
@@ -68,7 +69,9 @@ function run_benchmark(
 
     press = [
         if m isa FeatureSpecEntropyLossMgr
-            feature_unique_curve(rs, m, UNIQUE_CURVES_SAMPLES)
+            feature_unique_curve(rs, generation.prog, m.feature, UNIQUE_CURVES_SAMPLES)
+        elseif mk_unique_curves
+            feature_unique_curve(rs, generation.prog, identity, UNIQUE_CURVES_SAMPLES)
         else nothing end
         for m in loss_mgrs
     ]
@@ -123,7 +126,9 @@ function run_benchmark(
 
     postss = [
         if m isa FeatureSpecEntropyLossMgr
-            feature_unique_curve(rs, m, UNIQUE_CURVES_SAMPLES)
+            feature_unique_curve(rs, generation.prog, m.feature, UNIQUE_CURVES_SAMPLES)
+        elseif mk_unique_curves
+            feature_unique_curve(rs, generation.prog, identity, UNIQUE_CURVES_SAMPLES)
         else nothing end
         for m in loss_mgrs
     ]
@@ -139,7 +144,7 @@ function run_benchmark(
         end
     end
 
-    for (loss_config, pres, posts, m) in zip(loss_configs, press, postss, loss_mgrs)
+    for (loss_config, m) in zip(loss_configs, loss_mgrs)
         if loss_config isa FeatureSpecEntropy
             d = compute_feature_counts(m.feature_counts_history)
             filename = joinpath(rs.out_dir, "feature_dist_" * join(to_subpath(loss_config), "_"))
@@ -472,9 +477,10 @@ function make_plots(
     loss_configs, loss_weights = zip(loss_config_weight_pairs...)
 
     for (loss_config, pres, posts) in zip(loss_configs, press, postss)
-        if loss_config isa FeatureSpecEntropy
+        if !isnothing(pres)
             name = "unique_curves_" * join(to_subpath(loss_config), "_")
-            open(joinpath(out_dir, "$(name).csv"), "w") do file
+            csv_path = joinpath(out_dir, "$(name).csv")
+            open(csv_path, "w") do file
                 xs = 1:length(pres)
                 for (num_samples, pre, post) in zip(xs, pres, posts)
                     println(file, "$(num_samples)\t$(pre)\t$(post)")
@@ -484,6 +490,8 @@ function make_plots(
                 plot!(xs, posts, label="Trained", color=:red)
                 Plots.savefig(joinpath(out_dir, "$(name).svg"))
                 Plots.savefig(joinpath(out_dir, "$(name).png"))
+
+                println_flush(rs.io, "Saved unique curves to $(csv_path)")
                 
                 # Switch to PGFPlots for tex output
                 # pgfplots()
@@ -867,15 +875,15 @@ function only_first_last!(v)
     end
 end
 
-function feature_unique_curve(rs, m::FeatureSpecEntropyLossMgr, n)
-    sampler = sample_from_lang(rs, m.generation.prog)
+function feature_unique_curve(rs, prog, feature, n)
+    sampler = sample_from_lang(rs, prog)
     a = ADComputer(rs.var_vals)
     samples = [to_dist(sampler()) for _ in 1:n]
     feature_unique_curve = []
     feature_counts = DefaultDict(0)
     # counter(f, collection)
     for s in samples
-        s_feature = m.p.feature(s)
+        s_feature = feature(s)
         if !haskey(feature_counts, s_feature)
             feature_counts[s_feature] = 0
         end

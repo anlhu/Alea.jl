@@ -76,6 +76,7 @@ def run_training_run(verbose: bool, run: TrainingRun) -> TrainingResult:
     result = subprocess.run(run.command, capture_output=True, text=True)
     if result.returncode != 0:
         print("Error: Command failed with status", result.returncode)
+        print("stdout:", result.stdout)
         print("stderr:", result.stderr)
         sys.exit(1)
     
@@ -84,6 +85,9 @@ def run_training_run(verbose: bool, run: TrainingRun) -> TrainingResult:
         print("Error: Could not find log file path in output")
         print("stdout:", result.stdout)
         sys.exit(1)
+
+    if verbose:
+        print(f"Log file path: {log_match.group(1)}")
     
     return TrainingResult(log_match.group(1))
 
@@ -243,7 +247,32 @@ def handle_figure3_plots(config: Config, er: ExperimentResult) -> None:
 
 def handle_figure4_plots(config: Config, er: ExperimentResult) -> None:
     """Handle distribution plots for figure 4 experiments."""
-    pass
+
+    combined_df = None
+    for key, training_result in er.training_results.items():
+        csv_path = extract(training_result.log_path, r'Saved unique curves to (.*?cumulative_unique_types\.csv)')
+        # the csv has no header, so we add it: 'num_samples', 'untrained', 'trained'
+        cum_uniq = pd.read_csv(csv_path, sep='\t', header=None)
+        cum_uniq.columns = ['num_samples', 'untrained', key]
+
+        if combined_df is None:
+            combined_df = cum_uniq
+        else:
+            assert combined_df['num_samples'].equals(cum_uniq['num_samples'])
+            # only concatenate the 'key' column
+            combined_df = pd.concat([combined_df, cum_uniq[key]], ignore_index=True)
+    
+    plot_path = os.path.join(config.output_dir, f"fig4_cumulative_unique_types.png")
+
+    assert combined_df is not None
+
+    plt.figure(figsize=(10, 6))
+    for col in combined_df.columns[1:]:
+        plt.plot(combined_df['num_samples'], combined_df[col], label=col)
+    plt.legend()
+    plt.savefig(plot_path)
+    plt.close()
+    
 
 def handle_figure10_plots(config: Config, er: ExperimentResult) -> None:
     """Handle distribution plots for figure 10 experiments."""
@@ -344,30 +373,33 @@ def create_figure4_experiment(args: argparse.Namespace) -> Experiment:
         "entropy": TrainingRun(
             command=[
                 "julia", "--project", "pbt/experiments/tool.jl",
-                "-f",
-                "LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3) Pair{SpecEntropy{RBT},Float64}[SpecEntropy{RBT}(2,200,always_true)=>0.03]",
+                "-f", "-u",
+                "LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3)",
+                "Pair{SpecEntropy{RBT},Float64}[SpecEntropy{RBT}(2,200,always_true)=>0.03]",
                 str(args.fig4_epochs),
                 "0.1"
             ]
         ),
-        "specification": TrainingRun(
-            command=[
-                "julia", "--project", "pbt/experiments/tool.jl",
-                "-f",
-                "LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3) Pair{SatisfyPropertyLoss{RBT},Float64}[SatisfyPropertyLoss{RBT}(isRBTdist)=>0.03]",
-                str(args.fig4_epochs),
-                "0.1"
-            ]
-        ),
-        "specification_entropy": TrainingRun(
-            command=[
-                "julia", "--project", "pbt/experiments/tool.jl",
-                "-f",
-                "LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3) Pair{SpecEntropy{RBT},Float64}[SpecEntropy{RBT}(2,200,isRBT)=>0.3]",
-                str(args.fig4_epochs),
-                "0.1"
-            ]
-        ),
+        # "specification": TrainingRun(
+        #     command=[
+        #         "julia", "--project", "pbt/experiments/tool.jl",
+        #         "-f", "-u",
+        #         "LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3)",
+        #         "Pair{SatisfyPropertyLoss{RBT},Float64}[SatisfyPropertyLoss{RBT}(isRBTdist)=>0.03]",
+        #         str(args.fig4_epochs),
+        #         "0.1"
+        #     ]
+        # ),
+        # "specification_entropy": TrainingRun(
+        #     command=[
+        #         "julia", "--project", "pbt/experiments/tool.jl",
+        #         "-f", "-u",
+        #         "LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3)",
+        #         "Pair{SpecEntropy{RBT},Float64}[SpecEntropy{RBT}(2,200,isRBT)=>0.3]",
+        #         str(args.fig4_epochs),
+        #         "0.1"
+        #     ]
+        # ),
     })
 
 # Figure 10: RBT ablation on bounds, cumulative unique RBTs
@@ -384,7 +416,7 @@ def create_figure10_experiment(args: argparse.Namespace) -> Experiment:
         "specification_entropy": TrainingRun(
             command=[
                 "julia", "--project", "pbt/experiments/tool.jl",
-                "-f",
+                "-f", "-u",
                 "LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3) Pair{SpecEntropy{RBT},Float64}[SpecEntropy{RBT}(2,200,isRBT)=>0.3]",
                 str(args.fig10_epochs),
                 "0.1"
@@ -393,7 +425,7 @@ def create_figure10_experiment(args: argparse.Namespace) -> Experiment:
         "specification_entropy_no_bounds": TrainingRun(
             command=[
                 "julia", "--project", "pbt/experiments/tool.jl",
-                "-f",
+                "-f", "-u",
                 "LangSiblingDerivedGenerator{RBT}(Main.ColorKVTree.t,Pair{Type,Integer}[Main.ColorKVTree.t=>4,Main.Color.t=>0],2,3) Pair{SpecEntropy{RBT},Float64}[SpecEntropy{RBT}(2,200,isRBT)=>0.3]",
                 str(args.fig10_epochs),
                 "0.0"
@@ -492,16 +524,16 @@ def main():
     fig2_result, fig3_result, fig4_result, fig10_result = result
 
     if args.fig2 or args.all:
-        handle_figure2_plots(fig2_result)
+        handle_figure2_plots(config, fig2_result)
 
     if args.fig3 or args.all:
-        handle_figure3_plots(fig3_result)
+        handle_figure3_plots(config, fig3_result)
 
     if args.fig4 or args.all:
-        handle_figure4_plots(fig4_result)
+        handle_figure4_plots(config, fig4_result)
 
     if args.fig10 or args.all:
-        handle_figure10_plots(fig10_result)
+        handle_figure10_plots(config, fig10_result)
             
 if __name__ == "__main__":
     main()
