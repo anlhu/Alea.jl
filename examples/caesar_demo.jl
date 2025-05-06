@@ -1,18 +1,14 @@
-using Dice
+using Alea
+using DataStructures: counter
 
+corpus_url = "https://raw.githubusercontent.com/teropa/nlp/master/resources/corpora/gutenberg/shakespeare-macbeth.txt"
 cipher_text = "lipps, hmgi!"
 
 function get_char_freqs_from_url(corpus_url)
-    corpus = join(c for c in lowercase(read(download(corpus_url), String)) if c in valid_chars)
-    counts = Dict([(c, 0) for c in valid_chars])
-    for c in corpus
-        counts[c] += 1
-    end
+    corpus = filter(in(valid_chars), lowercase(read(download(corpus_url), String)))
+    counts = counter(corpus)
     [counts[c]/length(corpus) for c in valid_chars]
 end
-
-char_freqs = get_char_freqs_from_url("https://raw.githubusercontent.com/teropa/nlp/master/resources/corpora/gutenberg/shakespeare-macbeth.txt")
-
 
 function choose_char(char_freqs)
     DistChar(discrete(DistUInt{char_nbits}, char_freqs))
@@ -24,7 +20,7 @@ function sample_str(char_freqs, len)
 end
 
 function rotate_letter(c::DistChar, k::DistUInt)
-    if ((c < DistChar('a')) | (c > DistChar('z')))
+    @alea_ite if (c < DistChar('a')) | (c > DistChar('z'))
         c
     else
         rotated_i = c.i + k
@@ -37,34 +33,16 @@ function rotate_letter(c::DistChar, k::DistUInt)
 end
 
 function rotate_str(s::DistString, k::DistUInt)
-    chars = Vector(undef, length(s.chars))
-    for (i, c) in enumerate(s.chars)
-        chars[i] = rotate_letter(c, k)
-    end
-    # chars = [rotate_letter(c, k) for c in s.chars]
-    DistString(chars, s.len)
+    DistString([rotate_letter(c, k) for c in s.chars], s.len)
 end
 
 
-function original_given_cipher(cipher_text, char_freqs)
-    original = sample_str(char_freqs, length(cipher_text))
-    k = uniform(DistUInt{char_nbits}, 0, 25)
-    rotated = rotate_str(original, k)
-    observe(prob_equals(rotated, DistString(cipher_text)))
-    return original
-end
-
-# Distribution over original strings given observation
-clear_text = pr(@dice original_given_cipher(cipher_text, char_freqs));
-
-sort(collect(clear_text), by = x->x[2], rev=true)
-
-
-
-
-
-
-
+char_freqs = get_char_freqs_from_url(corpus_url)
+original = sample_str(char_freqs, length(cipher_text))
+k = uniform(DistUInt{char_nbits}, 0, 25)
+rotated = rotate_str(original, k)
+dist = pr(original, evidence=prob_equals(rotated, DistString(cipher_text)))
+display(dist)
 
 #==
    hello, dice! => 0.9510913373902465

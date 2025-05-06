@@ -1,5 +1,6 @@
+#==
 using Test
-using Dice
+using Alea
 using TikzGraphs
 using TikzPictures
 
@@ -17,3 +18,4 @@ using TikzPictures
     end
 
 end
+==#

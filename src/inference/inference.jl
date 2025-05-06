@@ -1,6 +1,7 @@
-export pr, condprobs, condprob, Cudd, CuddDebugInfo, ProbException, allobservations, JointQuery, returnvalue, expectation, variance
+export condprobs, condprob, Cudd, CuddDebugInfo, ProbException, allobservations, JointQuery, 
+    returnvalue, expectation, variance, kldivergence, tvdistance, entropy, pr
 
-using DataStructures: DefaultDict
+using DataStructures: DefaultDict, DefaultOrderedDict, OrderedDict
 
 ##################################
 # Core inference API implemented by backends
@@ -23,9 +24,11 @@ Compute probabilities of queries, optionally given evidence,
 conditional errors, and a custom inference algorithm.
 """
 function pr(queries::Vector{JointQuery}; evidence::AnyBool = true, 
-            errors::Vector{CondError} = CondError[], 
-            algo::InferAlgo = default_infer_algo()) 
-    pr(algo, evidence, queries; errors)
+            errors::Vector{CondError} = CondError[],
+            dots::Vector{Tuple{Vector{AnyBool}, String}} = Tuple{Vector{AnyBool}, String}[],
+            algo::InferAlgo = default_infer_algo(),
+            ) 
+    pr_impl(algo, evidence, queries, errors, dots)
 end
 
 function pr(queries::JointQuery...; kwargs...)
@@ -33,7 +36,7 @@ function pr(queries::JointQuery...; kwargs...)
     length(queries) == 1 ? ans[1] : ans
 end
 
-function pr(queries...; kwargs...)
+function pr(queries...; as_dist::Bool=false, kwargs...)
     joint_queries = map(queries) do query
         JointQuery(tobits(query))
     end
@@ -41,22 +44,58 @@ function pr(queries...; kwargs...)
     ans = map(queries, queryworlds) do query, worlds
         dist = DefaultDict(0.0)
         for (world, p) in worlds
-            dist[frombits(query, world)] += p
+            key = if as_dist
+                frombits_as_dist(query, world)
+            else
+                frombits(query, world)
+            end
+            dist[key] += p
         end
-        dist
+        by = if as_dist
+            t -> -t[2]
+        else
+            t -> (-t[2], t[1])
+        end
+        DefaultOrderedDict(0., OrderedDict(sort(collect(dist); by)))  # by decreasing probability
     end
     length(queries) == 1 ? ans[1] : ans
+end
+
+"""Compute the entropy of a random variable"""
+function entropy(p)
+    -sum(pr(p)) do (_, prob)
+        prob * log(prob)
+    end
+end
+
+"""Compute the KL-divergence between two random variables"""
+function kldivergence(p, q)
+    prp = pr(p)
+    prq = pr(q)
+    sum(prp) do (value, prob)
+        prob * (log(prob) - log(prq[value]))
+    end
+end
+
+"""Compute the total variation distance between two random variables"""
+function tvdistance(p, q)
+    prp = pr(p)
+    prq = pr(q)
+    0.5 * sum(keys(prp) ∪ keys(prq)) do value
+        abs(prp[value] - prq[value])
+    end
 end
 
 ##################################
 # Inference with metadata distributions from DSL
 ##################################
        
-"A distribution computed by a dice program with metadata on observes and errors"
+"A distribution computed by a alea program with metadata on observes and errors"
 struct MetaDist
     returnvalue
     errors::Vector{CondError}
     observations::Vector{AnyBool}
+    dots::Vector
 end
 
 returnvalue(x) = x.returnvalue
@@ -67,7 +106,7 @@ function pr(x::MetaDist; ignore_errors=false,
             algo::InferAlgo = default_infer_algo())
     evidence = allobservations(x)
     errors = ignore_errors ? CondError[] : x.errors
-    pr(returnvalue(x); evidence, errors, algo)
+    pr(returnvalue(x); evidence, errors, x.dots, algo)
 end
 
 function expectation(x::MetaDist; ignore_errors=false, 
@@ -109,4 +148,31 @@ end
 # Inference backends
 ##################################
 
-include("cudd.jl")
+# Wraps CUDD
+# Notable exports:
+# - CuddNode
+# - low(::CuddNode), high(::CuddNode)
+# - level_traversal(::CuddNode)
+include("cudd/core.jl")
+
+# Manages context for compiling AnyBools to CuddNode
+# Notable exports:
+# - BDDCompiler(roots::Vector{AnyBool})
+# - compile(::BDDCompiler, AnyBool)
+include("cudd/compile.jl")
+
+# Manages context for finding logprobability of a CuddNode, and the gradient of
+# a node's logprobability w.r.t. all flip probabilities.
+# Notable exports:
+# - WMC(::BDDCompiler)
+# - logprob(::WMC, ::CuddNode)::Float64
+# - grad_logprob(::WMC, ::CuddNode)::Dict{Flip, Float64}
+include("cudd/wmc.jl")
+
+# Exposes functionality for inferring the distribution of AnyBool-based
+# data structures.
+# Notable exports:
+# - pr(::Dist, evidence=..., errors=...)
+include("pr.jl")
+
+include("sample.jl")
