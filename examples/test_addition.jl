@@ -1,6 +1,61 @@
 using Revise
 using Dice
 
+# --- Basic Unit tests for diff sizes -- 
+d = uniform(DistUInt{3}, 2)
+e = uniform(DistUInt{3}, 2)
+f = d+e
+# input_names = string.(get_flips(f) .|> x -> x.global_id)
+print("\tNUM NODES ADD {3}, 2 = ", num_nodes(f))                # Should be 13
+# dump_dot(f, inames=input_names, filename="threexthree.dot")
+
+d = uniform(DistUInt{4}, 3)
+e = uniform(DistUInt{4}, 3)
+f = d+e
+# input_names = string.(get_flips(f) .|> x -> x.global_id)
+print("\tNUM NODES ADD {4}, 3= ", num_nodes(f))                 # Should be 22
+# dump_dot(f, inames=input_names, filename="fourxfour.dot")
+
+d = uniform(DistUInt{5}, 4)
+e = uniform(DistUInt{5}, 4)
+f = d+e
+# input_names = string.(get_flips(f) .|> x -> x.global_id)
+print("\tNUM NODES ADD {5}, 4= ", num_nodes(f))
+# dump_dot(f, inames=input_names, filename="fivexfive.dot")   # Should be 31 (?)
+
+d = uniform(DistUInt{8}, 7)
+e = uniform(DistUInt{8}, 7)
+f = d+e
+# input_names = string.(get_flips(f) .|> x -> x.global_id)
+print("\tNUM NODES ADD {8}, 7= ", num_nodes(f))                 # Should be 58
+# dump_dot(f, inames=input_names, filename="eightxeight.dot")
+
+d = uniform(DistUInt{10}, 9)
+e = uniform(DistUInt{10}, 9)
+f = d+e
+# input_names = string.(get_flips(f) .|> x -> x.global_id)
+print("\tNUM NODES ADD {10}, 9 = ", num_nodes(f)) 
+
+d = uniform(DistUInt{15}, 14)
+e = uniform(DistUInt{15}, 14)
+f = d+e
+# input_names = string.(get_flips(f) .|> x -> x.global_id)
+print("\tNUM NODES ADD {15}, 14 = ", num_nodes(f)) 
+
+d = uniform(DistUInt{20}, 19)
+e = uniform(DistUInt{20}, 19)
+f = d+e
+# input_names = string.(get_flips(f) .|> x -> x.global_id)
+print("\tNUM NODES ADD {20}, 19 = ", num_nodes(f)) 
+
+d = uniform(DistUInt{31}, 30)
+e = uniform(DistUInt{31}, 30)
+f = d+e
+# input_names = string.(get_flips(f) .|> x -> x.global_id)
+print("\tNUM NODES ADD {31}, 30 = ", num_nodes(f))                 # Should be 265 (global_id = )
+
+# -- End basic unit tests --
+
 LEN = 4
 a = uniform(DistUInt{LEN}, LEN-1)
 # b = uniform(DistUInt{LEN}, LEN-1) 
@@ -10,12 +65,6 @@ print("-- By Dice Code -- ")
 c = a+b 
 
 input_names = string.(get_flips(c) .|> x -> x.global_id)
-
-
-output_names = ["c[4]", "c[3]", "c[2]", "c[1]", "c[0]"]
-dump_dot(c, filename="byDiceCode2.dot", inames=input_names, onames=["c[4]", "c[3]", "c[2]", "c[1]", "c[0]"])
-print("\tNUM NODES: ", num_nodes(c))
-print("-- END: By Dice Code -- \n")
 
 
 R = uniform(DistUInt{8}, 7)
@@ -32,37 +81,6 @@ input_names_colors_2 = string.(get_flips(W) .|> x -> x.global_id)
 dump_dot(W, inames=input_names_colors_2, filename="just-division-coloring.dot")
 print("\tZ = NUM NODES: ", num_nodes(Z))
 print("\tW = NUM NODES = ", num_nodes(W))
-
-# --- Basic Unit tests for diff sizes -- 
-d = uniform(DistUInt{3}, 2)
-e = uniform(DistUInt{3}, 2)
-f = d+e
-input_names = string.(get_flips(f) .|> x -> x.global_id)
-print("\tNUM NODES ADD {3}, 2 = ", num_nodes(f))
-dump_dot(f, inames=input_names, filename="threexthree.dot")
-
-d = uniform(DistUInt{4}, 3)
-e = uniform(DistUInt{4}, 3)
-f = d+e
-input_names = string.(get_flips(f) .|> x -> x.global_id)
-print("\tNUM NODES ADD {4}, 3= ", num_nodes(f))
-dump_dot(f, inames=input_names, filename="fourxfour.dot")
-
-d = uniform(DistUInt{5}, 4)
-e = uniform(DistUInt{5}, 4)
-f = d+e
-input_names = string.(get_flips(f) .|> x -> x.global_id)
-print("\tNUM NODES ADD {5}, 4= ", num_nodes(f))
-dump_dot(f, inames=input_names, filename="fivexfive.dot")
-
-d = uniform(DistUInt{8}, 7)
-e = uniform(DistUInt{8}, 7)
-f = d+e
-input_names = string.(get_flips(f) .|> x -> x.global_id)
-print("\tNUM NODES ADD {8}, 7= ", num_nodes(f))
-dump_dot(f, inames=input_names, filename="eightxeight.dot")
-
-# -- End basic unit tests --
 
 
 a = uniform(DistUInt{8}, 7)
