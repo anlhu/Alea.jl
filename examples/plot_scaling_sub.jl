@@ -6,7 +6,7 @@ using Plots
 num_nodes_all = Int[] 
 indices = Int[] 
 
-for i in 1:10       # too long past 23 for ordering by global_id
+for i in 1:20       # too long past 20 for ordering by global_id
     a = uniform(DistUInt{i + 1}, i)
     b = uniform(DistUInt{i + 1}, i)
     c = a - b

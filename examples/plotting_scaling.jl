@@ -2,28 +2,44 @@ using Revise
 using Dice
 using Dates
 using Plots
+using BenchmarkTools
 
 num_nodes_all = Int[] 
 indices = Int[] 
+times_ns = Float64[]
 
-for i in 1:18       # too long past 23 for ordering by global_id
+
+for i in 25:30       # too long past 23 for ordering by global_id
     a = uniform(DistUInt{i + 1}, i)
     b = uniform(DistUInt{i + 1}, i)
+
     c = a + b
+    trial = @benchmark num_nodes($c)
+    # compute “pure” compute‐times per sample
+    comp_times = trial.times .- trial.gctimes
 
-    start_time = now()
+    tm = mean(comp_times)
+    println(tm)
     nodes = num_nodes(c)
-    elapsed = now() - start_time
 
-    if Dates.value(elapsed) > 120 * 10^9  # 120 seconds in nanoseconds
-        println("num_nodes took too long (>2 minutes). Exiting loop.")
-        break
-    else
-        push!(indices, i)
-        push!(num_nodes_all, nodes)
-        println("\tNUM NODES ADD $(i + 1), $i = $nodes")
-    end
+    push!(indices, i)
+    push!(num_nodes_all, nodes)
+    push!(times_ns, tm)
+    println("\tNUM NODES ADD $(i + 1), $i = $nodes")
+    println("\tTime: ", tm)
 end
+println("Time took - ", times_ns)
+
+plot(
+    indices, 
+    times_ns,
+    xlabel = "i (Input Size)",
+    ylabel = "Time (ns)",
+    title = "Time to run vs Input Size",
+    marker = :circle,
+    legend = false,
+    grid = true
+)
 
 println("Num Nodes: ", num_nodes_all)
 

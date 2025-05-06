@@ -50,7 +50,7 @@ const DistUInt64= DistUInt{64}
 "Construct a uniform random number"
 function uniform(::Type{DistUInt{W}}, n = W) where W
     @assert W >= n >= 0
-    DistUInt{W}([i > W-n ? flip(0.5, bit_index=(W-i+1)) : false for i=1:W])
+    DistUInt{W}([i > W-n ? flip(0.5, bit_index=(i)) : false for i=1:W])
 end
 
 
@@ -323,7 +323,7 @@ function extract_flips(bit)
     #=
     DistOr and DistAnd both have Fields
         x and y             (correspond to inputs nodes to OR/AND)
-    DistAnd has fields 
+    DistNot has fields 
         x 
     =#
 
@@ -345,40 +345,8 @@ function extract_flips(bit)
 end
 
 
-const MAX_DEPTH = 100  # You can adjust this as needed
-
-function extract_flips_maxdepth(bit, depth::Int = 0)
-    if depth > MAX_DEPTH
-        println("\t!! Max depth reached at bit: ", bit)
-        return []
-    end
-
-    if hasfield(typeof(bit), :ordering)
-        println("\t\t", bit)
-        return [bit]
-    elseif bit isa DistOr || bit isa DistAnd
-        if (bit isa DistOr)
-            println("\t++ OR")
-        else
-            println("\t++ AND")
-        end
-
-        return vcat(
-            extract_flips_maxdepth(bit.x, depth + 1),
-            extract_flips_maxdepth(bit.y, depth + 1)
-        )
-    elseif bit isa DistNot
-        return extract_flips_maxdepth(bit.x, depth + 1)
-    end
-
-    return []
-end
-
-
 function Base.:(+)(x::DistUInt{W}, y::DistUInt{W}) where W
     z = Vector{AnyBool}(undef, W)
-
-    println("\n------Running addition between -----------\n\t\t", x, " - ", y)
 
     carry = false
     for i = W:-1:1
@@ -393,9 +361,9 @@ function Base.:(+)(x::DistUInt{W}, y::DistUInt{W}) where W
         This traverses all flips, b/c they're all required for the computation
         Traverses from flips at top of BDD to flips at bottom --> assign ordering based on the visit order of this traversal
     =#
+
     traversal = z[1]
     traversal_flips = unique(extract_flips(traversal))
-    # traversal_flips = unique(extract_flips_maxdepth(traversal))
     orderings = [flip.ordering for flip in traversal_flips]     # Get available 'ordering' values to reassign to correctly ordered flips
     sort!(orderings)
     # println("-- Orderings: ", orderings)
@@ -405,10 +373,6 @@ function Base.:(+)(x::DistUInt{W}, y::DistUInt{W}) where W
         ordering_idx += 1
     end
 
-    # println("\n\n+++ AFTER REORDERING: ")
-    # for bit in traversal_flips
-    #     println("\t", bit)
-    # end
 
     DistUInt{W}(z)
 end
@@ -437,7 +401,6 @@ function Base.:(-)(x::DistUInt{W}, y::DistUInt{W}) where W
     z = Vector{AnyBool}(undef, W)
     borrow = false
 
-    println("\n--- SUBTRACTION: \n ++ X:")
 
     for i=W:-1:1
         z[i] = xor(x.bits[i], y.bits[i], borrow)
@@ -449,7 +412,6 @@ function Base.:(-)(x::DistUInt{W}, y::DistUInt{W}) where W
     traversal_flips = unique(extract_flips(traversal))
     orderings = [flip.ordering for flip in traversal_flips]     # Get available 'ordering' values to reassign to correctly ordered flips
     sort!(orderings)
-    println("-- Orderings: ", orderings)
     ordering_idx = 1
     for bit in traversal_flips
         bit.ordering = orderings[ordering_idx]
@@ -462,6 +424,11 @@ end
 function Base.:(<<)(x::DistUInt{W}, n) where W
     @assert 0 <= n
     DistUInt{W}(vcat(x.bits[n+1:end], falses(min(n,W))))
+end
+
+function Base.:(>>)(x::DistUInt{W}, n) where W
+    @assert 0 <= n
+    DistUInt{W}(vcat(falses(min(n,W)), x.bits[1:W - min(n,W)]))
 end
 
 function Base.:(*)(x::DistUInt{W}, y::DistUInt{W}) where W
