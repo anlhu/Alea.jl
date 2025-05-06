@@ -12,7 +12,7 @@ This repository currently consists code for the following papers:
 
 ## HyBit
 
-`HyBit` is a bit blasting based probabilistic programming system for discrete-continuous probabilistic programs. It is built on top of another probabilistic programming language Dice See [https://github.com/SHoltzen/dice](https://github.com/SHoltzen/dice).  
+Alea harbors implementation of HyBit as described in the paper [Bit Blasting Probabilistic Programs.](https://dl.acm.org/doi/10.1145/3656412). `HyBit` is a bit blasting based probabilistic programming system for discrete-continuous probabilistic programs. It is built on top of another probabilistic programming language Dice. See [https://github.com/SHoltzen/dice](https://github.com/SHoltzen/dice).  
 
 ## Installation
 
