@@ -1,26 +1,23 @@
 using Alea 
 using BenchmarkTools
 
-function fun() 
-    c = @alea begin 
-        function binomial(n::DistUIntOH{W}, p, max::Int) where W 
-            output = DistUIntOH{W}(0)
-            for i in 0:max-1 
-                output += ifelse((DistUIntOH{W}(i)<n) & flip(p), DistUIntOH{W}(1), DistUIntOH{W}(0))
-            end 
-            return output 
-        end 
-        
-
-        param = uniform(DistUIntOH{102}, 50, 101)
-        nummet = binomial(param, 0.5, 100)
-        numinfected = binomial(nummet, 0.3, 100)
-        numinfected
-    end
-
-    pr(c)
+function binomial(n::DistUIntOH{W}, p, max::Int) where W 
+    output = DistUIntOH{W}(0)
+    for i in max-1:-1:0 
+        output += ifelse((DistUIntOH{W}(i) < n) & flip(p), 
+            DistUIntOH{W}(1), DistUIntOH{W}(0))
+    end 
+    return output 
 end 
 
-x = @benchmark fun()
+function fun()
+    DInt = DistUIntOH{102}
+    param = uniform(DInt, 0, 51) + DInt(50)
+    nummet = binomial(param, 0.5, 100) + DInt(1)
+    numinfected = binomial(nummet, 0.3, 101)
+    pr(numinfected)
+end
+
+x = @benchmark fun() 
 
 println((median(x).time)/10^9)
